@@ -1,0 +1,30 @@
+.root {
+  border: none;
+  border-radius: 10px;
+  padding: 11px 18px;
+  font-weight: 600;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.primary {
+  background: var(--accent-gradient);
+  color: #fff;
+}
+
+.ghost {
+  background: #f0f1f6;
+  color: var(--text);
+}
+
+.block {
+  width: 100%;
+}
+
+.root:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.root:not(:disabled):active {
+  transform: translateY(1px);
+}
