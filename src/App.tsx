@@ -11,7 +11,13 @@ import { parseNotification } from './lib/notifications';
 import { phoneChatTitle } from './lib/phone';
 import { clearChats, loadChats, loadCredentials, saveChats, saveCredentials } from './lib/storage';
 import { chatStoreReducer, chatTitleFromChatId, initialChatStoreState } from './store/chatStore';
-import type { ChatMessage, ConnectionStatus, Credentials, MessageStatus } from './types';
+import type {
+  ChatMessage,
+  ConnectionStatus,
+  Credentials,
+  MessageStatus,
+  NotificationBody,
+} from './types';
 
 /** Статусы GREEN-API → внутренние статусы сообщения */
 const STATUS_MAP: Record<string, MessageStatus> = {
@@ -68,7 +74,7 @@ export default function App() {
 
   /** Обработка входящего уведомления GREEN-API (приходит из цикла опроса) */
   const handleNotification = useCallback(
-    (body: Parameters<typeof parseNotification>[0]) => {
+    (body: NotificationBody | undefined) => {
       const event = parseNotification(body);
       const current = storeRef.current;
 
