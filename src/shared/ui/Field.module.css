@@ -41,6 +41,10 @@
   display: block;
 }
 
+.withAction .input {
+  padding-right: 96px;
+}
+
 .action {
   position: absolute;
   right: 12px;
