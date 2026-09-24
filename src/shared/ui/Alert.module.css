@@ -1,0 +1,21 @@
+.root {
+  padding: 12px 14px;
+  border-radius: var(--radius-button-large);
+  font: 400 var(--font-description-size) / var(--font-description-line-height) var(--font);
+  overflow-wrap: anywhere;
+}
+
+.error {
+  background: var(--background-negative-fade);
+  color: var(--text-negative-strong);
+}
+
+.warning {
+  background: var(--background-warning-fade);
+  color: var(--text-warning-strong);
+}
+
+.info {
+  background: var(--background-themed-fade);
+  color: var(--text-primary);
+}

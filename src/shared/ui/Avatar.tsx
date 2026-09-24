@@ -1,14 +1,12 @@
-import styles from './Avatar.module.css';
+import { avatarInitials } from './avatarInitials';
+import s from './Avatar.module.css';
 
 interface AvatarProps {
-  /** стабильный идентификатор (chatId) — от него зависит цвет градиента */
   id: string;
   title: string;
   size?: number;
-  online?: boolean;
 }
 
-/** Парные градиенты аватаров из темы MAX (avatar-*) */
 const PALETTE: Array<[string, string]> = [
   ['#79bcff', '#4289ed'],
   ['#9b90fe', '#6746ec'],
@@ -30,26 +28,25 @@ function hash(value: string): number {
   return result;
 }
 
-function initials(title: string): string {
-  const clean = title.trim();
-  if (!clean) return '?';
-  if (clean.startsWith('+')) {
-    const digits = clean.replace(/\D/g, '');
-    return digits.slice(1, 3) || clean.slice(1, 3);
-  }
-
-  const words = clean.split(/\s+/).filter(Boolean);
-  if (words.length === 1) return words[0]!.slice(0, 2).toUpperCase();
-  return `${words[0]![0] ?? ''}${words[1]![0] ?? ''}`.toUpperCase();
+function PersonGlyph({ size }: { size: number }) {
+  const glyph = Math.round(size * 0.5);
+  return (
+    <svg width={glyph} height={glyph} viewBox="0 0 24 24">
+      <path
+        fill="currentColor"
+        d="M12 12.2a4.6 4.6 0 1 0 0-9.2 4.6 4.6 0 0 0 0 9.2Zm0 2.1c-4.4 0-8.2 2.2-8.2 5.1 0 .9.7 1.6 1.6 1.6h13.2c.9 0 1.6-.7 1.6-1.6 0-2.9-3.8-5.1-8.2-5.1Z"
+      />
+    </svg>
+  );
 }
 
-/** Круглый аватар с инициалами: градиент выбирается по chatId */
-export function Avatar({ id, title, size = 56, online = false }: AvatarProps) {
+export function Avatar({ id, title, size = 56 }: AvatarProps) {
   const [from, to] = PALETTE[hash(id) % PALETTE.length]!;
+  const initials = avatarInitials(title);
 
   return (
-    <div
-      className={styles.avatar}
+    <span
+      className={s.avatar}
       style={{
         width: size,
         height: size,
@@ -59,8 +56,7 @@ export function Avatar({ id, title, size = 56, online = false }: AvatarProps) {
       }}
       aria-hidden="true"
     >
-      <span>{initials(title)}</span>
-      {online ? <i className={styles.online} /> : null}
-    </div>
+      {initials ?? <PersonGlyph size={size} />}
+    </span>
   );
 }

@@ -3,12 +3,10 @@ import { classNames } from '@shared/lib';
 import s from './Logo.module.css';
 
 interface LogoProps {
-  /** сторона квадрата в px */
   size?: number;
   className?: string;
 }
 
-/** Логотип MAX: круг с градиентом и белым «пузырём» сообщения */
 export function Logo({ size = 40, className }: LogoProps) {
   const gradientId = useId();
 
@@ -22,7 +20,14 @@ export function Logo({ size = 40, className }: LogoProps) {
       aria-label="MAX"
     >
       <defs>
-        <linearGradient id={gradientId} x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+        <linearGradient
+          id={gradientId}
+          x1="8"
+          y1="4"
+          x2="56"
+          y2="60"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop offset="0%" stopColor="#8b5cf6" />
           <stop offset="55%" stopColor="#6d5cf6" />
           <stop offset="100%" stopColor="#4d8dff" />

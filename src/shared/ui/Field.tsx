@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, ReactNode } from 'react';
+import { useId, type InputHTMLAttributes, type ReactNode, type Ref } from 'react';
 import { classNames } from '@shared/lib';
 import s from './Field.module.css';
 
@@ -9,42 +9,50 @@ interface FieldAction {
 }
 
 interface FieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'className'> {
-  /** подпись над полем */
   label: string;
-  /** пояснение под полем */
   hint?: ReactNode;
-  /** текст ошибки под полем: перекрывает hint и выделяется красным */
   error?: string | null;
-  /** кнопка справа внутри поля, например «показать» пароль */
   action?: FieldAction;
+  ref?: Ref<HTMLInputElement>;
 }
 
-/** Поле ввода с подписью, подсказкой и опциональной кнопкой-действием */
-export function Field({ label, hint, error, action, id, ...inputProps }: FieldProps) {
-  const input = <input className={s.input} id={id} {...inputProps} />;
+export function Field({ label, hint, error, action, id, ref, ...inputProps }: FieldProps) {
+  const autoId = useId();
+  const inputId = id ?? autoId;
+  const messageId = `${inputId}-message`;
   const message = error ?? hint;
+  const describedBy = classNames(inputProps['aria-describedby'], message ? messageId : null);
+
+  const input = (
+    <input
+      ref={ref}
+      className={s.input}
+      id={inputId}
+      {...inputProps}
+      aria-describedby={describedBy || undefined}
+    />
+  );
 
   return (
-    <label className={s.root} htmlFor={id}>
-      <span className={s.label}>{label}</span>
+    <div className={s.root}>
+      <label className={s.label} htmlFor={inputId}>
+        {label}
+      </label>
       {action ? (
-        <span className={s.withAction}>
+        <div className={s.withAction}>
           {input}
-          <button
-            type="button"
-            className={s.action}
-            title={action.title}
-            onClick={action.onClick}
-          >
+          <button type="button" className={s.action} title={action.title} onClick={action.onClick}>
             {action.label}
           </button>
-        </span>
+        </div>
       ) : (
         input
       )}
       {message ? (
-        <span className={classNames(s.hint, Boolean(error) && s.hintError)}>{message}</span>
+        <p id={messageId} className={classNames(s.hint, Boolean(error) && s.hintError)}>
+          {message}
+        </p>
       ) : null}
-    </label>
+    </div>
   );
 }

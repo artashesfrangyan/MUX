@@ -1,6 +1,6 @@
 .avatar {
   border-radius: 50%;
-  color: var(--text-primary-inverse, #fff);
+  color: #fff;
   font-weight: 500;
   letter-spacing: 0.2px;
   display: inline-flex;
@@ -9,17 +9,4 @@
   position: relative;
   flex-shrink: 0;
   user-select: none;
-}
-
-.online {
-  position: absolute;
-  right: 2px;
-  bottom: 2px;
-  width: 25%;
-  height: 25%;
-  min-width: 11px;
-  min-height: 11px;
-  border-radius: 50%;
-  background: var(--text-positive);
-  border: 2px solid var(--background-primary);
 }

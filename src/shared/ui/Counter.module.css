@@ -1,0 +1,22 @@
+.counter {
+  display: inline-block;
+  border-radius: 999px;
+  background: var(--button-primary);
+  color: var(--button-primary-contrast);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.small {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font: 500 var(--font-tag-size) / 18px var(--font);
+}
+
+.medium {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  font: 500 var(--font-description-size) / 24px var(--font);
+}

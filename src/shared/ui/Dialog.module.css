@@ -1,0 +1,41 @@
+.dialog {
+  width: min(440px, calc(100% - 32px));
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-modal);
+  background: var(--background-primary);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-modal);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.dialog::backdrop {
+  background: var(--background-overlay);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.content {
+  padding: 24px;
+}
+
+.title {
+  margin-bottom: 8px;
+  font: 600 var(--font-header-size) / var(--font-header-line-height) var(--font);
+  color: var(--text-primary);
+}
+
+.description {
+  margin-bottom: 20px;
+  font: 400 var(--font-body-size) / var(--font-body-line-height) var(--font);
+  color: var(--text-secondary);
+}
+
+@media (max-width: 420px) {
+  .content {
+    padding: 20px 16px;
+  }
+}

@@ -1,7 +1,3 @@
-/* ==========================================================================
-   Обои чата MAX: базовый градиент + паттерн «космос» под mask-image
-   ========================================================================== */
-
 .wallpaper {
   position: absolute;
   inset: 0;
@@ -16,7 +12,11 @@
 }
 
 .base {
-  background: linear-gradient(28deg, var(--chat-background-step-1) 8.03%, var(--chat-background-step-2) 91.51%);
+  background: linear-gradient(
+    28deg,
+    var(--chat-background-step-1) 8.03%,
+    var(--chat-background-step-2) 91.51%
+  );
 }
 
 .pattern {
