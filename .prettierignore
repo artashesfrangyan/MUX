@@ -1,0 +1,6 @@
+dist
+coverage
+README.md
+INSTALL.md
+docs
+package-lock.json

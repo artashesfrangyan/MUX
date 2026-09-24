@@ -1,20 +1,23 @@
-import { defineConfig } from 'vite';
+import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
-import { fileURLToPath, URL } from 'url';
+import { defineConfig } from 'vite';
 
-const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
+const r = (path: string) => fileURLToPath(new URL(path, import.meta.url));
+
+const fsdAliases = {
+  '@app': r('src/app'),
+  '@pages': r('src/pages'),
+  '@widgets': r('src/widgets'),
+  '@features': r('src/features'),
+  '@entities': r('src/entities'),
+  '@shared': r('src/shared'),
+};
 
 export default defineConfig({
   base: './',
   plugins: [react()],
   resolve: {
-    alias: {
-      '@shared': r('src/shared'),
-      '@entities': r('src/entities'),
-      '@features': r('src/features'),
-      '@widgets': r('src/widgets'),
-      '@pages': r('src/pages'),
-    },
+    alias: fsdAliases,
   },
   server: {
     port: 5173,
