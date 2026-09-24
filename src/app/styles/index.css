@@ -1,0 +1,180 @@
+:root {
+  --background-primary: #fff;
+  --background-card: #fff;
+  --background-secondary: #f5f7fa;
+  --background-surface: #edeef2;
+  --background-tertiary: #0909090d;
+  --background-overlay: #06070866;
+  --background-toast: #151a1fe0;
+  --background-negative-fade: #ff303c14;
+  --background-warning-fade: #f2a30f24;
+
+  --text-primary: #060708;
+  --text-secondary: #060708ad;
+  --text-tertiary: #06070894;
+  --text-themed: #007aff;
+  --text-negative: #ff303c;
+  --text-negative-strong: #c8001e;
+  --text-warning-strong: #7a4a00;
+  --text-positive: #1abe43;
+  --text-on-overlay: #fff;
+
+  --icon-primary: #060708d6;
+  --icon-secondary: #060708a3;
+  --icon-mute: #06070847;
+  --icon-themed: #007aff;
+  --icon-warning: #f2a30f;
+  --divider-primary: #0c0d0e29;
+  --divider-secondary: #0c0d0e0f;
+  --controls-active: #007aff;
+  --focus-ring: #007aff;
+
+  --button-primary: #007aff;
+  --button-primary-contrast: #fff;
+  --button-secondary: #e9ebf1;
+  --states-button-primary-hover: #006be0;
+  --states-button-primary-disabled: #007aff7a;
+  --states-button-secondary-hover: #e0e3eb;
+  --states-button-ghost-hover: #0d0d0d0a;
+  --states-background-card-hover: #fafafa;
+  --states-background-card-pressed: #f5f5f5;
+  --states-background-card-selected: #007aff14;
+  --background-themed-fade: #007aff29;
+
+  --chat-background-step-1: #99d5d7;
+  --chat-background-step-2: #80bcff;
+  --chat-pattern-gradient: rgb(0 122 255 / 30%);
+  --chat-action-outside: #0f8ec2a3;
+
+  --bubble-incoming-bg: #fff;
+  --bubble-incoming-text: #060708;
+  --bubble-incoming-time: #06070885;
+  --bubble-incoming-status: #06070885;
+  --bubble-outgoing-bg: #e9fdff;
+  --bubble-outgoing-text: #011c29;
+  --bubble-outgoing-time: #0784b8;
+  --bubble-outgoing-status: #0f8ec2;
+  --bubble-link: #06709d;
+  --bubble-author: #0784b8;
+  --bubble-quote-bg: #0784b814;
+  --bubble-error: #d70015;
+
+  --radius-bubble: 16px;
+  --radius-bubble-corner: 6px;
+  --radius-button-large: 16px;
+  --radius-button-medium: 12px;
+  --radius-button-small: 10px;
+  --radius-capsule: 10px;
+  --radius-field: 12px;
+  --radius-modal: 20px;
+
+  --shadow-elevation-1: 0 1px 2px #00000014;
+  --shadow-elevation-3: 0 2px 12px #00000014, 0 0 2px #0000000f;
+  --shadow-popup: 0 8px 32px #0000001f;
+  --shadow-modal: 0 0 32px #0000001f, 0 12px 48px #00000029;
+  --shadow-scroll-bar: #0c0d0e3d;
+  --shadow-scroll-bar-hover: #0c0d0e5c;
+
+  --font:
+    -apple-system, BlinkMacSystemFont, 'Roboto', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --font-tag-size: 11px;
+  --font-tag-line-height: 16px;
+  --font-description-size: 13px;
+  --font-description-line-height: 16px;
+  --font-body-size: 15px;
+  --font-body-line-height: 20px;
+  --font-message-size: 16px;
+  --font-message-line-height: 20px;
+  --font-title-size: 17px;
+  --font-title-line-height: 24px;
+  --font-header-size: 24px;
+  --font-header-line-height: 28px;
+
+  color-scheme: light;
+  font-family: var(--font);
+  font-size: var(--font-body-size);
+  line-height: var(--font-body-line-height);
+  color: var(--text-primary);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--background-primary);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+a {
+  color: var(--text-themed);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--shadow-scroll-bar);
+  border: 5px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--shadow-scroll-bar-hover);
+  background-clip: content-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
