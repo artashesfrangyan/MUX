@@ -13,6 +13,7 @@
   padding: 16px 0 12px;
   background: var(--background-primary);
   z-index: 3;
+  border-right: 1px solid rgba(12, 13, 14, 0.06);
 }
 
 .topGroup,

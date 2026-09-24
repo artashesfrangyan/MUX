@@ -29,7 +29,6 @@
   font: 600 var(--font-header-size) / var(--font-header-line-height) var(--font);
   color: var(--text-primary);
   white-space: nowrap;
-  overflow: hidden;
   text-overflow: ellipsis;
 }
 
