@@ -102,7 +102,7 @@ export function NewChatDialog({ credentials, onClose, onCreate, onError }: NewCh
         />
 
         <div className={s.actions}>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             Отмена
           </Button>
           <Button type="submit" disabled={busy}>

@@ -1,19 +1,20 @@
+/* ==========================================================================
+   Оболочка приложения MAX: рельса 77px + панель чатов 393px + окно чата
+   ========================================================================== */
+
 .app {
   height: 100%;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  background: var(--background-primary);
 }
 
-.container {
+.shell {
   flex: 1;
   display: flex;
-  min-height: 0;
   width: 100%;
-  max-width: 1500px;
-  margin: 0 auto;
-  background: var(--panel);
-  box-shadow: var(--shadow);
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -21,11 +22,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  background: #fff4e5;
-  color: #8a5a00;
-  font-size: 13px;
-  padding: 9px 16px;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--background-surface);
+  color: var(--text-secondary);
+  font: 400 var(--font-description-size) / var(--font-description-line-height) var(--font);
 }
 
 .bannerText {
@@ -35,8 +36,11 @@
 .linkButton {
   border: none;
   background: none;
-  color: inherit;
-  font-weight: 600;
   padding: 0;
+  color: var(--text-themed);
+  font: 500 var(--font-description-size) / var(--font-description-line-height) var(--font);
+}
+
+.linkButton:hover {
   text-decoration: underline;
 }

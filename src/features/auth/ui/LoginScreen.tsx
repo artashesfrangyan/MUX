@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { DEFAULT_API_URL, normalizeApiUrl } from '@shared/api';
 import type { Credentials } from '@shared/types';
-import { Button, Field, Logo } from '@shared/ui';
+import { Button, Field, Logo, Wallpaper } from '@shared/ui';
 import s from './LoginScreen.module.css';
 
 interface LoginScreenProps {
@@ -53,6 +53,7 @@ export function LoginScreen({ initialCredentials, busy, error, onSubmit }: Login
 
   return (
     <div className={s.login}>
+      <Wallpaper />
       <form className={s.card} onSubmit={submit}>
         <Logo size={58} className={s.logo} />
         <h1 className={s.title}>Вход в чат MAX</h1>

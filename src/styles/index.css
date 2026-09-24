@@ -1,27 +1,124 @@
 /* ==========================================================================
-   MAX Chat · глобальные сбросы, переменные и базовые элементы
+   MAX Chat · дизайн-токены, сбросы и базовые элементы
+
+   Значения сняты с реального веб-клиента MAX (web.max.ru): тема «space»,
+   светлая цветовая схема. Имена переменных повторяют токены клиента, чтобы
+   стили компонентов читались так же, как в оригинале.
    ========================================================================== */
 
 :root {
-  --accent: #7b61ff;
-  --accent-2: #4d8dff;
-  --accent-gradient: linear-gradient(135deg, #7b61ff 0%, #4d8dff 100%);
-  --bg: #f2f3f7;
-  --panel: #ffffff;
-  --text: #16181d;
-  --text-muted: #8b8f9c;
-  --line: #e6e8ef;
-  --green: #2ec27e;
-  --red: #ef4a58;
+  /* Поверхности */
+  --background-primary: #fff;
+  --background-card: #fff;
+  --background-secondary: #f5f7fa;
+  --background-surface: #edeef2;
+  --background-tertiary: #0909090d;
+
+  /* Текст */
+  --text-primary: #060708;
+  --text-secondary: #060708ad;
+  --text-tertiary: #06070885;
+  --text-mute: #06070866;
+  --text-themed: #007aff;
+  --text-negative: #ff303c;
+  --text-positive: #1abe43;
+
+  /* Иконки, разделители, контролы */
+  --icon-primary: #060708d6;
+  --icon-secondary: #060708a3;
+  --icon-tertiary: #0607087a;
+  --icon-mute: #06070847;
+  --icon-themed: #007aff;
+  --divider-primary: #0c0d0e29;
+  --divider-secondary: #0c0d0e0f;
+  --controls-active: #007aff;
+  --controls-inactive: #09090914;
+
+  /* Кнопки и состояния */
+  --button-primary: #007aff;
+  --button-primary-contrast: #fff;
+  --button-secondary: #e9ebf1;
+  --states-button-primary-hover: #006be0;
+  --states-button-primary-disabled: #007aff7a;
+  --states-button-secondary-hover: #e0e3eb;
+  --states-button-ghost-hover: #0d0d0d0a;
+  --states-background-card-hover: #fafafa;
+  --states-background-card-pressed: #f5f5f5;
+  --states-background-card-selected: #007aff14;
+  --background-themed-fade: #007aff29;
+  --stroke-negative-fade: #ff303ca3;
+
+  /* Обои чата: градиент + паттерн «космос» под mask (как в MAX) */
+  --chat-background-step-1: #99d5d7;
+  --chat-background-step-2: #80bcff;
+  --chat-pattern-gradient: rgba(0, 122, 255, 0.3);
+  --chat-action-outside: #0f8ec2a3;
+  --chat-timeline-active: #ffffffb8;
+
+  /* Пузыри сообщений (светлая тема) */
+  --bubble-incoming-bg: #fff;
+  --bubble-incoming-text: #060708;
+  --bubble-incoming-time: #06070885;
+  --bubble-incoming-status: #06070885;
+  --bubble-outgoing-bg: #e9fdff;
+  --bubble-outgoing-text: #011c29;
+  --bubble-outgoing-time: #0784b8;
+  --bubble-outgoing-status: #0f8ec2;
+  --bubble-link: #0784b8;
+  --bubble-author: #0784b8;
+
+  /* Радиусы */
+  --radius-bubble: 16px;
+  --radius-bubble-corner: 6px;
+  --radius-button-large: 16px;
+  --radius-button-medium: 12px;
+  --radius-button-small: 10px;
+  --radius-capsule: 10px;
+  --radius-field: 12px;
+  --radius-modal: 20px;
+
+  /* Тени и скроллбар */
+  --shadow-elevation-1: 0 1px 2px #00000014;
+  --shadow-elevation-3: 0 2px 12px #00000014, 0 0 2px #0000000f;
+  --shadow-popup: 0 8px 32px #0000001f;
+  --shadow-modal: 0 0 32px #0000001f, 0 12px 48px #00000029;
+  --shadow-scroll-bar: #0c0d0e3d;
+
+  /* Совместимость со старыми именами токенов (используются в служебных блоках) */
+  --accent: var(--button-primary);
+  --accent-gradient: linear-gradient(135deg, var(--button-primary) 0%, #4d8dff 100%);
+  --bg: var(--background-surface);
+  --panel: var(--background-card);
+  --text: var(--text-primary);
+  --text-muted: var(--text-tertiary);
+  --line: var(--divider-secondary);
+  --green: var(--text-positive);
+  --red: var(--text-negative);
   --amber: #f2a30f;
-  --radius: 14px;
-  --shadow: 0 12px 34px rgba(28, 32, 60, 0.08);
+  --radius: var(--radius-button-large);
+  --shadow: var(--shadow-elevation-3);
+
+  /* Типографика (размеры из токенов MAX) */
+  --font:
+    -apple-system, BlinkMacSystemFont, 'Roboto', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --font-tag-size: 11px;
+  --font-tag-line-height: 16px;
+  --font-description-size: 13px;
+  --font-description-line-height: 16px;
+  --font-body-size: 15px;
+  --font-body-line-height: 20px;
+  --font-message-size: 16px;
+  --font-message-line-height: 20px;
+  --font-title-size: 17px;
+  --font-title-line-height: 24px;
+  --font-header-size: 24px;
+  --font-header-line-height: 28px;
 
   color-scheme: light;
-  font-family:
-    'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-  font-size: 15px;
-  color: var(--text);
+  font-family: var(--font);
+  font-size: var(--font-body-size);
+  line-height: var(--font-body-line-height);
+  color: var(--text-primary);
 }
 
 * {
@@ -36,15 +133,56 @@ body,
 }
 
 body {
-  background: var(--bg);
+  background: var(--background-primary);
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
 }
 
 button {
   font: inherit;
+  color: inherit;
   cursor: pointer;
 }
 
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
 a {
-  color: var(--accent);
+  color: var(--text-themed);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--shadow-scroll-bar);
+  border: 5px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #0c0d0e5c;
+  background-clip: content-box;
 }

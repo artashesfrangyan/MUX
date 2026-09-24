@@ -1,31 +1,39 @@
+/* ==========================================================================
+   Поле ввода MAX: подпись-описание + input 52px, радиус 16px
+   ========================================================================== */
+
 .root {
   display: block;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .label {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin-bottom: 6px;
+  font: 400 var(--font-description-size) / var(--font-description-line-height) var(--font);
+  color: var(--text-tertiary);
+  margin: 0 0 6px 12px;
 }
 
 .input {
   width: 100%;
-  padding: 11px 13px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #fafbfd;
-  font: inherit;
+  height: 52px;
+  padding: 0 12px;
+  border: 1px solid var(--divider-secondary);
+  border-radius: var(--radius-button-large);
+  background: var(--background-card);
+  font: 400 var(--font-message-size) / var(--font-message-line-height) var(--font);
+  letter-spacing: 0.15px;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+.input:hover {
+  border-color: var(--divider-primary);
+}
+
 .input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(123, 97, 255, 0.13);
-  background: #fff;
+  border-color: var(--button-primary);
+  box-shadow: 0 0 0 3px var(--background-themed-fade);
 }
 
 .withAction {
@@ -35,23 +43,22 @@
 
 .action {
   position: absolute;
-  right: 8px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   border: none;
   background: transparent;
-  color: var(--text-muted);
-  font-size: 12px;
+  color: var(--text-themed);
+  font: 500 var(--font-description-size) / var(--font-description-line-height) var(--font);
 }
 
 .hint {
   display: block;
-  margin-top: 6px;
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.45;
+  margin: 6px 0 0 12px;
+  font: 400 var(--font-description-size) / var(--font-description-line-height) var(--font);
+  color: var(--text-tertiary);
 }
 
 .hintError {
-  color: var(--red);
+  color: var(--text-negative);
 }

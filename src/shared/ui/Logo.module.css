@@ -1,12 +1,5 @@
 .root {
-  background: var(--accent-gradient);
-  color: #fff;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 14px;
+  display: inline-block;
   flex-shrink: 0;
   user-select: none;
 }

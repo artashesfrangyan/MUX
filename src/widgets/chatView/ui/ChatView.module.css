@@ -1,27 +1,24 @@
+/* ==========================================================================
+   Окно чата MAX: белая шапка 65px и область с обоями
+   ========================================================================== */
+
 .chatView {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  background:
-    radial-gradient(circle at 12% 8%, rgba(123, 97, 255, 0.07), transparent 42%),
-    radial-gradient(circle at 88% 92%, rgba(77, 141, 255, 0.08), transparent 46%), #fff;
-}
-
-.chatViewEmpty {
-  align-items: center;
-  justify-content: center;
+  background: var(--background-primary);
 }
 
 .header {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.86);
-  backdrop-filter: blur(6px);
+  padding: 12px 16px;
+  min-height: 65px;
+  background: var(--background-primary);
 }
 
 .info {
@@ -31,39 +28,33 @@
 }
 
 .title {
-  font-weight: 700;
-  font-size: 16px;
+  font: 500 var(--font-title-size) / var(--font-title-line-height) var(--font);
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .subtitle {
-  font-size: 12px;
-  color: var(--text-muted);
+  font: 400 var(--font-description-size) / var(--font-description-line-height) var(--font);
+  color: var(--text-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.emptyState {
-  text-align: center;
-  padding: 40px;
-  max-width: 420px;
+.body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.emptyLogo {
-  margin-bottom: 18px;
-}
-
-.emptyTitle {
-  margin: 0 0 8px;
-  font-size: 20px;
-}
-
-.emptyText {
-  color: var(--text-muted);
-  font-size: 13.5px;
-  line-height: 1.55;
-  margin: 0 0 20px;
+.composerArea {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px 16px;
 }

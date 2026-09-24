@@ -1,0 +1,36 @@
+/* ==========================================================================
+   Обои чата MAX: базовый градиент + паттерн «космос» под mask-image
+   ========================================================================== */
+
+.wallpaper {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+}
+
+.base {
+  background: linear-gradient(28deg, var(--chat-background-step-1) 8.03%, var(--chat-background-step-2) 91.51%);
+}
+
+.pattern {
+  background: linear-gradient(
+    28deg,
+    var(--chat-pattern-gradient) 8.03%,
+    var(--chat-pattern-gradient) 91.51%
+  );
+  -webkit-mask-image: var(--pattern-url);
+  mask-image: var(--pattern-url);
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 280px 280px;
+  mask-size: 280px 280px;
+  -webkit-mask-position: top left;
+  mask-position: top left;
+}

@@ -1,54 +1,87 @@
+/* ==========================================================================
+   Панель ввода MAX: белая капсула 16px, иконки 24px в кнопках 32px
+   ========================================================================== */
+
 .composer {
+  width: 100%;
+  max-width: 708px;
+  margin: 0 auto;
+  border-radius: var(--radius-button-large);
+  background: var(--background-primary);
+  box-shadow: var(--shadow-elevation-1);
+  overflow: hidden;
+}
+
+.inner {
   display: flex;
   align-items: flex-end;
-  gap: 10px;
-  padding: 12px 20px 18px;
+  padding: 4px;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+}
+
+.btnEnd {
+  display: flex;
+  align-items: center;
+  padding: 4px 4px 4px 8px;
+}
+
+.roundButton {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--icon-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.roundButton:not(:disabled):hover {
+  background: var(--states-button-ghost-hover);
+}
+
+.roundButton:disabled {
+  color: var(--icon-mute);
+  cursor: default;
+}
+
+.sendButton {
+  color: var(--button-primary);
+}
+
+.sendButton:disabled {
+  color: var(--icon-mute);
 }
 
 .input {
   flex: 1;
-  resize: none;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 12px 14px;
-  font: inherit;
-  line-height: 1.4;
+  min-width: 0;
+  min-height: 40px;
   max-height: 160px;
-  outline: none;
-  background: #fff;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(123, 97, 255, 0.12);
-}
-
-.send {
-  width: 46px;
-  height: 46px;
+  padding: 10px 4px;
   border: none;
-  border-radius: 50%;
-  background: var(--accent-gradient);
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  border-radius: 0;
+  background: transparent;
+  outline: none;
+  resize: none;
+  font: 400 var(--font-message-size) / var(--font-message-line-height) var(--font);
+  letter-spacing: 0.15px;
+  color: var(--text-primary);
 }
 
-.send:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+.input:disabled {
+  cursor: default;
 }
 
-.send:not(:disabled):active {
-  transform: scale(0.95);
-}
-
-@media (max-width: 820px) {
-  .composer {
-    padding: 10px 12px 14px;
+@media (max-width: 700px) {
+  .btn {
+    padding: 4px 4px;
   }
 }

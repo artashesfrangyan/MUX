@@ -19,7 +19,10 @@ function isSameDay(a: number, b: number): boolean {
   );
 }
 
-/** Лента сообщений с разделителями по датам и автоскроллом вниз */
+/**
+ * Лента сообщений MAX: колонка 708px по центру, капсулы дат,
+ * автоскролл вниз при появлении новых сообщений.
+ */
 export function MessageList({ messages, onRetry }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const messagesCount = messages.length;
@@ -29,33 +32,42 @@ export function MessageList({ messages, onRetry }: MessageListProps) {
     if (container) container.scrollTop = container.scrollHeight;
   }, [messagesCount]);
 
-  if (messages.length === 0) {
-    return (
-      <div className={s.messages} ref={containerRef}>
-        <div className={s.placeholder}>
-          Сообщений пока нет. Напишите первое сообщение — оно отправится в MAX.
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className={s.messages} ref={containerRef}>
-      {messages.map((message, index) => {
-        const previous = messages[index - 1];
-        const showDay = !previous || !isSameDay(previous.timestamp, message.timestamp);
-
-        return (
-          <div key={message.id}>
-            {showDay ? (
-              <div className={s.day}>
-                <span>{formatDayLabel(message.timestamp)}</span>
-              </div>
-            ) : null}
-            <MessageBubble message={message} onRetry={onRetry} />
+    <div className={s.scroller} ref={containerRef}>
+      <div className={s.column}>
+        {messages.length === 0 ? (
+          <div className={s.placeholder}>
+            <span>Сообщений пока нет — напишите первое сообщение в MAX</span>
           </div>
-        );
-      })}
+        ) : null}
+
+        {messages.map((message, index) => {
+          const previous = messages[index - 1];
+          const next = messages[index + 1];
+          const showDay = !previous || !isSameDay(previous.timestamp, message.timestamp);
+          const isFirst = showDay || previous!.outgoing !== message.outgoing;
+          const isLast =
+            !next ||
+            next.outgoing !== message.outgoing ||
+            !isSameDay(next.timestamp, message.timestamp);
+
+          return (
+            <div className={s.group} key={message.id}>
+              {showDay ? (
+                <div className={s.day}>
+                  <span>{formatDayLabel(message.timestamp)}</span>
+                </div>
+              ) : null}
+              <MessageBubble
+                message={message}
+                isFirst={isFirst}
+                isLast={isLast}
+                onRetry={onRetry}
+              />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

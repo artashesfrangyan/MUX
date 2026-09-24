@@ -16,7 +16,7 @@ export function formatTime(timestamp: number): string {
   });
 }
 
-/** Короткая дата для списка чатов: сегодня — время, вчера — «вчера», иначе — ДД.ММ.ГГ */
+/** Короткая дата для списка чатов в формате MAX: время за сегодня, «вчера», «23 сент.» */
 export function formatChatListTime(timestamp: number): string {
   const date = new Date(timestamp);
   const now = new Date();
@@ -25,6 +25,10 @@ export function formatChatListTime(timestamp: number): string {
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
   if (sameDay(date, yesterday)) return 'вчера';
+
+  if (date.getFullYear() === now.getFullYear()) {
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  }
 
   return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }

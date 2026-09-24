@@ -1,12 +1,26 @@
+import styles from './Avatar.module.css';
+
 interface AvatarProps {
-  /** стабильный идентификатор (chatId) — от него зависит цвет */
+  /** стабильный идентификатор (chatId) — от него зависит цвет градиента */
   id: string;
   title: string;
   size?: number;
   online?: boolean;
 }
 
-const PALETTE = ['#7b61ff', '#4d8dff', '#ff7a59', '#2ec27e', '#e94c89', '#f2a30f', '#21b5c7'];
+/** Парные градиенты аватаров из темы MAX (avatar-*) */
+const PALETTE: Array<[string, string]> = [
+  ['#79bcff', '#4289ed'],
+  ['#9b90fe', '#6746ec'],
+  ['#bf97ff', '#526eff'],
+  ['#ff48b6', '#e74aa6'],
+  ['#ffb381', '#e5782d'],
+  ['#1bd6e3', '#27a5c8'],
+  ['#14e1d5', '#03c722'],
+  ['#08d7f3', '#288fbe'],
+  ['#da9ef1', '#9b90fe'],
+  ['#abb7cc', '#7ab7e4'],
+];
 
 function hash(value: string): number {
   let result = 0;
@@ -21,7 +35,7 @@ function initials(title: string): string {
   if (!clean) return '?';
   if (clean.startsWith('+')) {
     const digits = clean.replace(/\D/g, '');
-    return digits.slice(0, 2) || clean.slice(1, 3);
+    return digits.slice(1, 3) || clean.slice(1, 3);
   }
 
   const words = clean.split(/\s+/).filter(Boolean);
@@ -29,11 +43,9 @@ function initials(title: string): string {
   return `${words[0]![0] ?? ''}${words[1]![0] ?? ''}`.toUpperCase();
 }
 
-import styles from './Avatar.module.css';
-
-/** Круглый аватар с инициалами контакта */
-export function Avatar({ id, title, size = 48, online = false }: AvatarProps) {
-  const color = PALETTE[hash(id) % PALETTE.length]!;
+/** Круглый аватар с инициалами: градиент выбирается по chatId */
+export function Avatar({ id, title, size = 56, online = false }: AvatarProps) {
+  const [from, to] = PALETTE[hash(id) % PALETTE.length]!;
 
   return (
     <div
@@ -41,8 +53,9 @@ export function Avatar({ id, title, size = 48, online = false }: AvatarProps) {
       style={{
         width: size,
         height: size,
-        background: color,
+        background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)`,
         fontSize: Math.round(size * 0.36),
+        lineHeight: `${Math.round(size * 0.36) + 2}px`,
       }}
       aria-hidden="true"
     >

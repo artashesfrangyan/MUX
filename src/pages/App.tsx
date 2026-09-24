@@ -9,6 +9,7 @@ import { NewChatDialog, type NewChatResult } from '@features/chat';
 import { useMessaging } from '@features/messaging';
 import { Sidebar } from '@widgets/sidebar';
 import { ChatView, EmptyState } from '@widgets/chatView';
+import { NavRail, type NavFolder } from '@widgets/navRail';
 import { Toasts } from '@shared/ui';
 import s from './App.module.css';
 
@@ -32,6 +33,7 @@ export default function App() {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [restartToken, setRestartToken] = useState(0);
   const [newChatOpen, setNewChatOpen] = useState(false);
+  const [folder, setFolder] = useState<NavFolder>('all');
   const [loginBusy, setLoginBusy] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
@@ -159,6 +161,10 @@ export default function App() {
     [store.chats],
   );
   const unreadTotal = useMemo(() => chats.reduce((sum, chat) => sum + chat.unread, 0), [chats]);
+  const visibleChats = useMemo(
+    () => (folder === 'unread' ? chats.filter((chat) => chat.unread > 0) : chats),
+    [chats, folder],
+  );
   const activeChat = store.activeChatId ? (store.chats[store.activeChatId] ?? null) : null;
 
   if (!credentials) {
@@ -177,30 +183,46 @@ export default function App() {
 
   return (
     <div className={s.app}>
-      {connectionError ? (
+      {connection === 'error' || connection === 'connecting' ? (
         <div className={s.banner}>
-          <span className={s.bannerText}>Не удаётся получать сообщения: {connectionError}</span>
-          <button
-            type="button"
-            className={s.linkButton}
-            onClick={() => setRestartToken((v) => v + 1)}
-          >
-            Переподключиться
-          </button>
+          <span className={s.bannerText}>
+            {connection === 'error'
+              ? `Не удаётся получать сообщения: ${connectionError ?? 'ошибка соединения'}`
+              : 'Подключение к GREEN-API…'}
+          </span>
+          {connection === 'error' ? (
+            <button
+              type="button"
+              className={s.linkButton}
+              onClick={() => setRestartToken((v) => v + 1)}
+            >
+              Переподключиться
+            </button>
+          ) : null}
         </div>
       ) : null}
 
-      <div className={s.container}>
-        <Sidebar
-          idInstance={credentials.idInstance}
-          chats={chats}
-          activeChatId={store.activeChatId}
-          connection={connection}
+      <div className={s.shell}>
+        <NavRail
+          folder={folder}
           unreadTotal={unreadTotal}
-          onSelectChat={(chatId) => dispatch({ type: 'setActive', chatId })}
-          onNewChat={() => setNewChatOpen(true)}
+          connection={connection}
+          idInstance={credentials.idInstance}
+          onSelectFolder={setFolder}
           onClearHistory={handleClearHistory}
           onLogout={handleLogout}
+        />
+
+        <Sidebar
+          chats={visibleChats}
+          activeChatId={store.activeChatId}
+          emptyHint={
+            folder === 'unread'
+              ? 'Нет чатов с непрочитанными сообщениями'
+              : 'Чатов пока нет. Нажмите «+», чтобы создать чат по номеру телефона.'
+          }
+          onSelectChat={(chatId) => dispatch({ type: 'setActive', chatId })}
+          onNewChat={() => setNewChatOpen(true)}
         />
 
         {activeChat ? (
@@ -211,7 +233,7 @@ export default function App() {
             onRetry={handleRetry}
           />
         ) : (
-          <EmptyState onNewChat={() => setNewChatOpen(true)} />
+          <EmptyState />
         )}
       </div>
 

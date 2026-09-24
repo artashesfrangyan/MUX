@@ -1,19 +1,61 @@
+/* ==========================================================================
+   Кнопки MAX: размеры small/medium/large, варианты primary/secondary/ghost
+   ========================================================================== */
+
 .root {
   border: none;
-  border-radius: 10px;
-  padding: 11px 18px;
-  font-weight: 600;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 500 var(--font-message-size) / var(--font-message-line-height) var(--font);
+  letter-spacing: 0.15px;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+.small {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-button-small);
+}
+
+.medium {
+  height: 44px;
+  padding: 0 18px;
+  border-radius: var(--radius-button-medium);
+}
+
+.large {
+  height: 52px;
+  padding: 0 22px;
+  border-radius: var(--radius-button-large);
 }
 
 .primary {
-  background: var(--accent-gradient);
-  color: #fff;
+  background: var(--button-primary);
+  color: var(--button-primary-contrast);
+}
+
+.primary:not(:disabled):hover {
+  background: var(--states-button-primary-hover);
+}
+
+.secondary {
+  background: var(--button-secondary);
+  color: var(--text-primary);
+}
+
+.secondary:not(:disabled):hover {
+  background: var(--states-button-secondary-hover);
 }
 
 .ghost {
-  background: #f0f1f6;
-  color: var(--text);
+  background: transparent;
+  color: var(--icon-primary);
+}
+
+.ghost:not(:disabled):hover {
+  background: var(--states-button-ghost-hover);
 }
 
 .block {
@@ -21,10 +63,15 @@
 }
 
 .root:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+  cursor: default;
 }
 
-.root:not(:disabled):active {
-  transform: translateY(1px);
+.primary:disabled {
+  background: var(--states-button-primary-disabled);
+  color: var(--button-primary-contrast);
+}
+
+.secondary:disabled,
+.ghost:disabled {
+  opacity: 0.45;
 }
