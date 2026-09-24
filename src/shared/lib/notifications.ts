@@ -1,64 +1,77 @@
-import type { MessageData, NotificationBody } from '@shared/types';
+import type { MessageData, NotificationBody } from '@shared/api';
 import { toMilliseconds } from './time';
 
-/** Событие, извлечённое из входящего уведомления GREEN-API */
+export interface TextMessageFields {
+  chatId: string;
+  title: string;
+  phoneNumber?: string;
+  isGroup: boolean;
+  text: string;
+  idMessage: string;
+  timestamp: number;
+  quotedId?: string;
+}
+
 export type NotificationEvent =
-  | {
-      kind: 'incomingText';
-      chatId: string;
-      title: string;
-      phoneNumber?: string;
-      isGroup: boolean;
-      text: string;
-      idMessage: string;
-      timestamp: number;
-    }
-  | {
-      kind: 'outgoingText';
-      chatId: string;
-      title: string;
-      phoneNumber?: string;
-      isGroup: boolean;
-      text: string;
-      idMessage: string;
-      timestamp: number;
-    }
-  | { kind: 'status'; chatId: string; idMessage: string; status: string }
+  | ({ kind: 'incomingText' } & TextMessageFields)
+  | ({ kind: 'outgoingText'; viaApi: boolean } & TextMessageFields)
+  | { kind: 'status'; chatId: string; idMessage: string; status: string; description?: string }
   | { kind: 'state'; state: string }
   | { kind: 'quota'; description?: string }
   | { kind: 'ignored'; reason: string };
 
-/** Достаёт текст из messageData: поддерживаем textMessage и extendedTextMessage (сообщение со ссылкой) */
-export function extractMessageText(messageData: MessageData | undefined): string | null {
-  if (!messageData) return null;
-
-  if (messageData.typeMessage === 'textMessage') {
-    const text = messageData.textMessageData?.textMessage;
-    return typeof text === 'string' && text.length > 0 ? text : null;
-  }
-
-  if (messageData.typeMessage === 'extendedTextMessage') {
-    const text = messageData.extendedTextMessageData?.text;
-    return typeof text === 'string' && text.length > 0 ? text : null;
-  }
-
-  return null;
+export interface TextContent {
+  text: string;
+  quotedId?: string;
 }
 
-function buildChatTitle(body: NotificationBody): string {
+function toId(value: unknown): string | undefined {
+  if (typeof value !== 'string' && typeof value !== 'number') return undefined;
+  const id = String(value);
+  return id ? id : undefined;
+}
+
+function messageText({
+  typeMessage,
+  textMessageData,
+  extendedTextMessageData,
+}: MessageData): unknown {
+  if (typeMessage === 'textMessage') return textMessageData?.textMessage;
+
+  if (typeMessage === 'extendedTextMessage' || typeMessage === 'quotedMessage') {
+    return extendedTextMessageData?.text;
+  }
+  return undefined;
+}
+
+export function extractTextContent(messageData: MessageData | undefined): TextContent | null {
+  if (!messageData) return null;
+
+  const text = messageText(messageData);
+  if (typeof text !== 'string' || !text) return null;
+
+  const { quotedMessage, textMessageData, extendedTextMessageData } = messageData;
+  const quotedId = toId(
+    quotedMessage?.stanzaId ??
+      textMessageData?.quotedMessage?.stanzaId ??
+      extendedTextMessageData?.stanzaId,
+  );
+  return quotedId ? { text, quotedId } : { text };
+}
+
+function contactName(body: NotificationBody): string {
   const senderData = body.senderData;
   if (!senderData) return '';
   return (
     senderData.chatName?.trim() ||
     senderData.senderContactName?.trim() ||
     senderData.senderName?.trim() ||
-    (senderData.senderPhoneNumber ? `+${senderData.senderPhoneNumber}` : '')
+    ''
   );
 }
 
-/** Преобразует уведомление GREEN-API в доменное событие приложения */
 export function parseNotification(body: NotificationBody | undefined): NotificationEvent {
-  if (!body || !body.typeWebhook) {
+  if (!body?.typeWebhook) {
     return { kind: 'ignored', reason: 'Пустое уведомление' };
   }
 
@@ -67,52 +80,62 @@ export function parseNotification(body: NotificationBody | undefined): Notificat
     case 'outgoingMessageReceived':
     case 'outgoingAPIMessageReceived': {
       const senderData = body.senderData;
-      const text = extractMessageText(body.messageData);
+      const content = extractTextContent(body.messageData);
 
+      const idMessage = toId(body.idMessage);
       if (!senderData?.chatId) return { kind: 'ignored', reason: 'Нет chatId в уведомлении' };
-      if (!text) {
+
+      if (!idMessage) return { kind: 'ignored', reason: 'Нет idMessage в уведомлении' };
+      if (!content) {
         return {
           kind: 'ignored',
           reason: `Пропущено нетекстовое сообщение (${body.messageData?.typeMessage ?? 'unknown'})`,
         };
       }
 
-      const common = {
-        chatId: String(senderData.chatId),
-        title: buildChatTitle(body),
+      const chatId = String(senderData.chatId);
+      const fields: TextMessageFields = {
+        chatId,
+        title: contactName(body),
         phoneNumber: senderData.senderPhoneNumber
           ? String(senderData.senderPhoneNumber)
           : undefined,
-        isGroup: senderData.chatType === 'group' || String(senderData.chatId).startsWith('-'),
-        text,
-        idMessage: String(body.idMessage ?? `in-${Date.now()}`),
+        isGroup: senderData.chatType === 'group' || chatId.startsWith('-'),
+        text: content.text,
+        idMessage,
         timestamp: toMilliseconds(body.timestamp),
+        ...(content.quotedId ? { quotedId: content.quotedId } : {}),
       };
 
-      return body.typeWebhook === 'incomingMessageReceived'
-        ? { kind: 'incomingText', ...common }
-        : { kind: 'outgoingText', ...common };
+      if (body.typeWebhook === 'incomingMessageReceived') {
+        return { kind: 'incomingText', ...fields };
+      }
+      return {
+        kind: 'outgoingText',
+        viaApi: body.typeWebhook === 'outgoingAPIMessageReceived',
+        ...fields,
+      };
     }
 
     case 'outgoingMessageStatus': {
-      if (!body.idMessage || !body.status) {
+      const idMessage = toId(body.idMessage);
+      if (!idMessage || !body.status) {
         return { kind: 'ignored', reason: 'Нет idMessage/status в уведомлении' };
       }
       return {
         kind: 'status',
-        chatId: String(body.chatId ?? ''),
-        idMessage: String(body.idMessage),
+        chatId: toId(body.chatId) ?? '',
+        idMessage,
         status: body.status,
+        ...(body.description ? { description: body.description } : {}),
       };
     }
 
-    case 'stateInstanceChanged': {
-      const state = (body as { stateInstance?: string }).stateInstance ?? 'unknown';
-      return { kind: 'state', state };
-    }
+    case 'stateInstanceChanged':
+      return { kind: 'state', state: body.stateInstance || 'unknown' };
 
     case 'quotaExceeded':
-      return { kind: 'quota', description: body.description };
+      return { kind: 'quota', description: body.quotaData?.description ?? body.description };
 
     default:
       return { kind: 'ignored', reason: `Тип уведомления ${body.typeWebhook} не обрабатывается` };

@@ -1,1 +1,2 @@
-export * from './ui/NewChatDialog';
+export { NewChatDialog } from './ui/NewChatDialog';
+export type { NewChatResult } from './model/useCreateChat';

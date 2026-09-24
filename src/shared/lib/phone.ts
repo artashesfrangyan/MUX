@@ -1,37 +1,28 @@
-/**
- * Работа с номерами телефонов.
- *
- * MAX (как и GREEN-API v3) ожидает номер получателя в международном формате:
- * 11 или 12 цифр, только РФ (код 7) и РБ (код 375).
- */
+function russianPhone(national: string): string | null {
+  return national.length === 10 && !national.startsWith('0') ? `7${national}` : null;
+}
 
-/** Оставляет только цифры и приводит номер к международному формату (начинается с 7 или 375) */
 export function normalizePhone(raw: string): string | null {
   const digits = raw.replace(/\D/g, '');
   if (!digits) return null;
 
-  // 8XXXXXXXXXX -> 7XXXXXXXXXX (привычная запись для РФ)
-  if (digits.length === 11 && digits.startsWith('8')) {
-    return `7${digits.slice(1)}`;
-  }
+  if (digits.length === 11 && digits.startsWith('80')) return `375${digits.slice(2)}`;
+  if (digits.length === 10 && digits.startsWith('0')) return `375${digits.slice(1)}`;
 
-  // 10 цифр без кода страны -> РФ
-  if (digits.length === 10) {
-    return `7${digits}`;
+  if (digits.length === 11 && (digits.startsWith('8') || digits.startsWith('7'))) {
+    return russianPhone(digits.slice(1));
   }
+  if (digits.length === 10) return russianPhone(digits);
 
-  if (digits.length === 11 && digits.startsWith('7')) return digits;
   if (digits.length === 12 && digits.startsWith('375')) return digits;
 
   return null;
 }
 
-/** Проверяет, что номер подходит для методов MAX (11 или 12 цифр, коды 7 / 375) */
 export function isValidPhone(raw: string): boolean {
   return normalizePhone(raw) !== null;
 }
 
-/** +7 999 123-45-67 / +375 29 123-45-67 */
 export function formatPhone(digits: string): string {
   const d = digits.replace(/\D/g, '');
   if (d.startsWith('375') && d.length === 12) {
@@ -43,24 +34,7 @@ export function formatPhone(digits: string): string {
   return `+${d}`;
 }
 
-/**
- * Резервный идентификатор чата для отправки по номеру телефона.
- * GREEN-API v3 поддерживает обратную совместимость с форматом phoneNumber@c.us
- * (используется, если метод CheckAccount не смог вернуть chatId).
- */
-export function phoneToChatId(digits: string): string {
-  return `${digits.replace(/\D/g, '')}@c.us`;
-}
-
-/** Извлекает номер телефона из chatId вида 79991234567@c.us */
-export function chatIdToPhone(chatId: string): string | null {
-  const match = /^(\d{11,12})@c\.us$/.exec(chatId);
-  return match ? (match[1] ?? null) : null;
-}
-
-/** Заголовок чата по номеру телефона (когда мессенджер не передал имя контакта) */
-export function phoneChatTitle(chatId: string, phoneNumber?: string): string {
-  const digits = (phoneNumber ? normalizePhone(phoneNumber) : null) ?? chatIdToPhone(chatId);
-  if (digits) return formatPhone(digits);
-  return chatId;
+export function phoneChatTitle(phoneNumber?: string): string | null {
+  const digits = phoneNumber ? normalizePhone(phoneNumber) : null;
+  return digits ? formatPhone(digits) : null;
 }

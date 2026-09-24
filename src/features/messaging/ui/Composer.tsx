@@ -1,79 +1,108 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useImperativeHandle, useRef, type KeyboardEvent, type Ref } from 'react';
+import { classNames, matchesMedia, TOUCH_INPUT_QUERY } from '@shared/lib';
 import s from './Composer.module.css';
 
-interface ComposerProps {
-  disabled: boolean;
-  onSend: (text: string) => void;
+export interface ComposerHandle {
+  focus: () => void;
 }
 
-const MAX_LENGTH = 4000;
+interface ComposerProps {
+  value: string;
+  onChange: (value: string) => void;
+  onSend: (text: string) => void;
+  disabled: boolean;
+  ref?: Ref<ComposerHandle>;
+}
 
-/**
- * Поле ввода сообщения MAX: белая капсула радиуса 16px, кнопка «+» слева
- * и круглая кнопка отправки справа. Enter — отправить, Shift+Enter — новая строка.
- */
-export function Composer({ disabled, onSend }: ComposerProps) {
-  const [value, setValue] = useState('');
+export const MESSAGE_MAX_LENGTH = 4000;
+const MAX_INPUT_HEIGHT = 160;
+
+function fitHeight(textarea: HTMLTextAreaElement) {
+  textarea.style.height = 'auto';
+  textarea.style.height = `${Math.min(textarea.scrollHeight, MAX_INPUT_HEIGHT)}px`;
+}
+
+function isSendKey(event: KeyboardEvent<HTMLTextAreaElement>): boolean {
+  if (event.key !== 'Enter' || event.shiftKey) return false;
+
+  if (event.nativeEvent.isComposing || event.keyCode === 229) return false;
+
+  return !matchesMedia(TOUCH_INPUT_QUERY);
+}
+
+export function Composer({ value, onChange, onSend, disabled, ref }: ComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      focus: () => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+        textarea.focus();
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      },
+    }),
+    [],
+  );
 
   useEffect(() => {
     const textarea = textareaRef.current;
-    if (!textarea) return;
-    textarea.style.height = 'auto';
-    textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
+    if (textarea) fitHeight(textarea);
   }, [value]);
 
-  const canSend = !disabled && value.trim().length > 0;
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea || typeof ResizeObserver === 'undefined') return undefined;
+
+    let width = textarea.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (textarea.clientWidth === width) return;
+      width = textarea.clientWidth;
+      fitHeight(textarea);
+    });
+    observer.observe(textarea);
+    return () => observer.disconnect();
+  }, []);
+
+  const text = value.trim();
+  const canSend = !disabled && text.length > 0;
 
   const submit = () => {
     if (!canSend) return;
-    onSend(value.trim());
-    setValue('');
+    onSend(text);
+    onChange('');
     textareaRef.current?.focus();
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      submit();
-    }
+    if (!isSendKey(event)) return;
+    event.preventDefault();
+    submit();
   };
 
   return (
     <div className={s.composer}>
       <div className={s.inner}>
-        <div className={s.btn}>
-          <button
-            type="button"
-            className={s.roundButton}
-            disabled
-            aria-label="Прикрепить файл"
-            title="Вложения не поддерживаются: тестовое задание — только текстовые сообщения"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z" fill="currentColor" />
-            </svg>
-          </button>
-        </div>
-
         <textarea
           ref={textareaRef}
           id="messageText"
           name="messageText"
           className={s.input}
+          aria-label="Сообщение"
           placeholder={disabled ? 'Нет соединения с GREEN-API' : 'Сообщение'}
           value={value}
-          maxLength={MAX_LENGTH}
+          maxLength={MESSAGE_MAX_LENGTH}
           rows={1}
           disabled={disabled}
-          onChange={(event) => setValue(event.target.value)}
+          onChange={(event) => onChange(event.target.value)}
           onKeyDown={handleKeyDown}
         />
 
         <div className={s.btnEnd}>
           <button
             type="button"
-            className={`${s.roundButton} ${s.sendButton}`}
+            className={classNames(s.roundButton, s.sendButton)}
             disabled={!canSend}
             title="Отправить (Enter)"
             aria-label="Отправить сообщение"

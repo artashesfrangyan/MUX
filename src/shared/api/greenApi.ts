@@ -1,79 +1,46 @@
+import { isRecord } from '@shared/lib';
+import { DEMO_API_URL, isDemoApiUrl } from './demo/demoMode';
+import { demoTransport } from './demo/demoTransport';
+import {
+  errorFromReason,
+  errorFromResponse,
+  GreenApiError,
+  invalidResponseError,
+  isAbortError,
+  networkError,
+  timeoutError,
+} from './errors';
+import { parseInstanceSettings } from './settings';
+import { fetchTransport, type HttpMethod, type Transport } from './transport';
 import type {
-  CheckAccountResponse,
+  CheckAccountResult,
   Credentials,
+  InstanceSettings,
+  NotificationBody,
   NotificationEnvelope,
   SendMessageResponse,
   StateInstanceResponse,
-} from '@shared/types';
+} from './types';
 
-/**
- * Тонкий клиент HTTP API GREEN-API MAX (v3).
- *
- * Формат вызова методов (https://green-api.com/v3/docs/api/request-format/):
- *   {apiUrl}/waInstance{idInstance}/{method}/{apiTokenInstance}
- *
- * Используются только методы, необходимые для текстовой переписки:
- *   SendMessage         — отправка текстового сообщения
- *   ReceiveNotification — получение входящего уведомления (long polling)
- *   DeleteNotification  — подтверждение обработки уведомления
- *   CheckAccount        — получение chatId по номеру телефона (создание нового чата)
- *   GetStateInstance    — проверка авторизации инстанса
- *   SetSettings         — включение получения уведомлений через HTTP API
- */
-
-/** Хост API по умолчанию. В личном кабинете может быть выдан другой (кластерный) apiUrl. */
 export const DEFAULT_API_URL = 'https://api.green-api.com';
 
-/** Ошибка обращения к GREEN-API (сеть, HTTP-код или ошибка валидации) */
-export class GreenApiError extends Error {
-  readonly status?: number;
-
-  constructor(message: string, status?: number) {
-    super(message);
-    this.name = 'GreenApiError';
-    this.status = status;
-  }
-}
-
-/** Приводит apiUrl к виду https://host без завершающего слэша */
 export function normalizeApiUrl(raw: string): string {
   let url = raw.trim();
   if (!url) return DEFAULT_API_URL;
+  if (isDemoApiUrl(url)) return DEMO_API_URL;
   if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
   return url.replace(/\/+$/, '');
 }
 
-function buildUrl(credentials: Credentials, method: string, suffix = ''): string {
-  const { apiUrl, idInstance, apiTokenInstance } = credentials;
-  return `${normalizeApiUrl(apiUrl)}/waInstance${idInstance.trim()}/${method}/${apiTokenInstance.trim()}${suffix}`;
-}
-
-/** Достаёт человекочитаемое сообщение об ошибке из ответа GREEN-API */
-function extractErrorMessage(payload: string, status: number): string {
-  if (!payload) return `Ошибка запроса (HTTP ${status})`;
-
-  try {
-    const data = JSON.parse(payload) as Record<string, unknown>;
-    const candidate =
-      (data.message as string | undefined) ??
-      (data.reason as string | undefined) ??
-      (data.description as string | undefined) ??
-      (data.error as string | undefined);
-    if (candidate) return String(candidate);
-    return JSON.stringify(data);
-  } catch {
-    const text = payload.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-    if (status === 403) {
-      return 'Сервис вернул 403 Forbidden. Проверьте apiUrl и доступность сервиса из вашей сети.';
-    }
-    return text ? `${text} (HTTP ${status})` : `Ошибка запроса (HTTP ${status})`;
-  }
+function transportFor(apiUrl: string): Transport {
+  return isDemoApiUrl(apiUrl) ? demoTransport : fetchTransport;
 }
 
 interface RequestOptions {
-  method?: 'GET' | 'POST' | 'DELETE';
+  httpMethod?: HttpMethod;
+  pathParam?: string;
+  query?: Record<string, string>;
   body?: unknown;
-  /** таймаут запроса в миллисекундах (long polling у ReceiveNotification) */
   timeoutMs?: number;
   signal?: AbortSignal;
 }
@@ -81,138 +48,179 @@ interface RequestOptions {
 async function request(
   credentials: Credentials,
   method: string,
-  suffix: string,
-  { method: httpMethod = 'GET', body, timeoutMs = 20_000, signal }: RequestOptions = {},
+  { httpMethod = 'GET', pathParam, query, body, timeoutMs = 20_000, signal }: RequestOptions = {},
 ): Promise<string> {
+  signal?.throwIfAborted();
+
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), timeoutMs);
-
-  // внешний сигнал (остановка опроса) тоже прерывает запрос
   const onAbort = () => controller.abort();
   signal?.addEventListener('abort', onAbort);
 
+  const apiUrl = normalizeApiUrl(credentials.apiUrl);
   try {
-    const response = await fetch(buildUrl(credentials, method, suffix), {
-      method: httpMethod,
-      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
+    const { status, text } = await transportFor(apiUrl)({
+      credentials: {
+        apiUrl,
+        idInstance: credentials.idInstance.trim(),
+        apiTokenInstance: credentials.apiTokenInstance.trim(),
+      },
+      method,
+      httpMethod,
+      pathParam,
+      query,
+      body,
       signal: controller.signal,
     });
 
-    const text = await response.text();
-
-    if (!response.ok) {
-      throw new GreenApiError(extractErrorMessage(text, response.status), response.status);
-    }
+    if (status < 200 || status >= 300) throw errorFromResponse(status, text);
     return text;
   } catch (error) {
     if (error instanceof GreenApiError) throw error;
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      // прерывание по внешнему сигналу — не ошибка, по таймауту — ошибка
+    if (isAbortError(error)) {
       if (signal?.aborted) throw error;
-      throw new GreenApiError('Превышено время ожидания ответа от GREEN-API');
+      throw timeoutError();
     }
-    throw new GreenApiError(
-      'Не удалось выполнить запрос к GREEN-API. Проверьте apiUrl, подключение к сети и CORS.',
-    );
+    throw networkError();
   } finally {
     window.clearTimeout(timer);
     signal?.removeEventListener('abort', onAbort);
   }
 }
 
-/** SendMessage — отправка текстового сообщения. Возвращает idMessage. */
+function parseJson(text: string, method: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw invalidResponseError(method, text.slice(0, 200));
+  }
+}
+
 export async function sendMessage(
   credentials: Credentials,
   chatId: string,
   message: string,
+  signal?: AbortSignal,
 ): Promise<SendMessageResponse> {
-  const text = await request(credentials, 'sendMessage', '', {
-    method: 'POST',
+  const text = await request(credentials, 'sendMessage', {
+    httpMethod: 'POST',
     body: { chatId, message },
-    timeoutMs: 20_000,
+    signal,
   });
-  const data = JSON.parse(text) as SendMessageResponse;
-  if (!data?.idMessage) {
-    throw new GreenApiError('GREEN-API не вернул идентификатор отправленного сообщения');
-  }
-  return data;
+  const data = parseJson(text, 'sendMessage');
+  const idMessage = isRecord(data) ? data.idMessage : undefined;
+  if (typeof idMessage !== 'string' || !idMessage) throw invalidResponseError('sendMessage', text);
+  return { idMessage };
 }
 
-/**
- * ReceiveNotification — получение одного входящего уведомления.
- * Возвращает null, если очередь пуста (сервис завершил запрос по таймауту).
- */
 export async function receiveNotification(
   credentials: Credentials,
   receiveTimeout = 20,
   signal?: AbortSignal,
 ): Promise<NotificationEnvelope | null> {
   const timeout = Math.min(60, Math.max(5, receiveTimeout));
-  const text = await request(credentials, 'receiveNotification', `?receiveTimeout=${timeout}`, {
+  const text = await request(credentials, 'receiveNotification', {
+    query: { receiveTimeout: String(timeout) },
     timeoutMs: (timeout + 15) * 1000,
     signal,
   });
 
-  if (!text || !text.trim() || text.trim() === '{}') return null;
+  if (!text.trim()) return null;
+  const data = parseJson(text, 'receiveNotification');
+  if (!isRecord(data) || typeof data.receiptId !== 'number') return null;
 
-  const data = JSON.parse(text) as NotificationEnvelope | null;
-  if (!data || typeof data.receiptId !== 'number' || !data.body) return null;
-  return data;
+  const body = (isRecord(data.body) ? data.body : {}) as unknown as NotificationBody;
+  return { receiptId: data.receiptId, body };
 }
 
-/** DeleteNotification — подтверждение обработки уведомления (обязательный шаг) */
 export async function deleteNotification(
   credentials: Credentials,
   receiptId: number,
+  signal?: AbortSignal,
 ): Promise<boolean> {
-  const text = await request(credentials, 'deleteNotification', `/${receiptId}`, {
-    method: 'DELETE',
+  const text = await request(credentials, 'deleteNotification', {
+    httpMethod: 'DELETE',
+    pathParam: String(receiptId),
     timeoutMs: 15_000,
+    signal,
   });
-  if (!text || !text.trim()) return false;
-  const data = JSON.parse(text) as { result?: boolean };
-  return Boolean(data?.result);
+  if (!text.trim()) return false;
+  const data = parseJson(text, 'deleteNotification');
+  return isRecord(data) && data.result === true;
 }
 
-/**
- * CheckAccount — проверка наличия аккаунта MAX на номере и получение chatId.
- * Именно этот метод используется для «создания» нового чата по номеру телефона.
- */
+export interface CheckAccountOptions {
+  force?: boolean;
+  signal?: AbortSignal;
+}
+
 export async function checkAccount(
   credentials: Credentials,
   phoneNumber: string,
-  force = true,
-): Promise<CheckAccountResponse> {
-  const text = await request(credentials, 'checkAccount', '', {
-    method: 'POST',
+  { force = false, signal }: CheckAccountOptions = {},
+): Promise<CheckAccountResult> {
+  const text = await request(credentials, 'checkAccount', {
+    httpMethod: 'POST',
     body: { phoneNumber: Number(phoneNumber), force },
     timeoutMs: 25_000,
+    signal,
   });
-  return JSON.parse(text) as CheckAccountResponse;
+  const data = parseJson(text, 'checkAccount');
+  if (!isRecord(data)) throw invalidResponseError('checkAccount', text);
+
+  if (data.status === false) {
+    const reason = typeof data.reason === 'string' ? data.reason : '';
+    const message = `GREEN-API не смог проверить номер: ${reason || 'нет ответа'}`;
+    throw errorFromReason(reason) ?? new GreenApiError('badRequest', message, { detail: reason });
+  }
+
+  const { exist, chatId } = data;
+  const id = typeof chatId === 'string' || typeof chatId === 'number' ? String(chatId) : '';
+  if (typeof exist !== 'boolean' || (exist && !id)) {
+    throw invalidResponseError('checkAccount', text);
+  }
+  return { exist, chatId: exist ? id : '', fromCache: data.fromCache === true };
 }
 
-/** GetStateInstance — состояние авторизации инстанса */
 export async function getStateInstance(
   credentials: Credentials,
   signal?: AbortSignal,
 ): Promise<StateInstanceResponse> {
-  const text = await request(credentials, 'getStateInstance', '', { timeoutMs: 15_000, signal });
-  return JSON.parse(text) as StateInstanceResponse;
+  const text = await request(credentials, 'getStateInstance', { timeoutMs: 15_000, signal });
+  const data = parseJson(text, 'getStateInstance');
+  const stateInstance = isRecord(data) ? data.stateInstance : undefined;
+  if (typeof stateInstance !== 'string' || !stateInstance) {
+    throw invalidResponseError('getStateInstance', text);
+  }
+  return { stateInstance };
 }
 
-/** SetSettings — включаем получение уведомлений через HTTP API (webhookUrl должен быть пустым) */
-export async function setHttpApiSettings(credentials: Credentials): Promise<void> {
-  await request(credentials, 'setSettings', '', {
-    method: 'POST',
-    body: {
-      webhookUrl: '',
-      incomingWebhook: 'yes',
-      outgoingWebhook: 'yes',
-      outgoingAPIMessageWebhook: 'yes',
-      outgoingMessageWebhook: 'yes',
-      stateWebhook: 'yes',
-    },
-    timeoutMs: 20_000,
+export async function getSettings(
+  credentials: Credentials,
+  signal?: AbortSignal,
+): Promise<InstanceSettings> {
+  const text = await request(credentials, 'getSettings', { timeoutMs: 15_000, signal });
+  const data = parseJson(text, 'getSettings');
+  if (!isRecord(data)) throw invalidResponseError('getSettings', text);
+  return parseInstanceSettings(data);
+}
+
+export async function setSettings(
+  credentials: Credentials,
+  patch: Partial<InstanceSettings>,
+  signal?: AbortSignal,
+): Promise<void> {
+  const text = await request(credentials, 'setSettings', {
+    httpMethod: 'POST',
+    body: patch,
+    signal,
   });
+  const data = parseJson(text, 'setSettings');
+  if (!isRecord(data) || data.saveSettings !== true) {
+    throw new GreenApiError(
+      'invalidResponse',
+      'GREEN-API не подтвердил сохранение настроек инстанса.',
+      { detail: text },
+    );
+  }
 }

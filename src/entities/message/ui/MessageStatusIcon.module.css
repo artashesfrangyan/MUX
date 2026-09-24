@@ -1,0 +1,18 @@
+.icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--message-status-color, var(--icon-secondary));
+}
+
+.pending {
+  opacity: 0.7;
+}
+
+.read {
+  color: var(--message-status-read-color, var(--icon-themed));
+}
+
+.failed {
+  color: var(--bubble-error);
+}

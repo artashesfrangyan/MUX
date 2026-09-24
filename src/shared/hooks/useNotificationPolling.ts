@@ -1,31 +1,63 @@
-import { useEffect, useRef } from 'react';
-import { receiveNotification, deleteNotification } from '@shared/api';
-import type { ConnectionStatus, Credentials, NotificationBody } from '@shared/types';
+import { useEffect, useEffectEvent } from 'react';
+import {
+  deleteNotification,
+  GreenApiError,
+  receiveNotification,
+  type ConnectionStatus,
+  type GreenApiErrorCode,
+  type Credentials,
+  type NotificationBody,
+  type NotificationEnvelope,
+} from '@shared/api';
+import { backoffDelay } from '@shared/lib';
+
+export interface PollingState {
+  status: ConnectionStatus;
+  error?: string;
+  stopped?: boolean;
+}
 
 interface UseNotificationPollingOptions {
   credentials: Credentials | null;
   enabled: boolean;
-  /** длительность long polling ReceiveNotification (5..60 сек) */
   receiveTimeout?: number;
   onNotification: (body: NotificationBody) => void;
-  onStatusChange: (status: ConnectionStatus, errorMessage?: string) => void;
-  /** изменение значения перезапускает цикл опроса */
+  onStatusChange: (state: PollingState) => void;
   restartToken?: number;
 }
 
-function delay(ms: number): Promise<void> {
+const POLL_GAP_MS = 300;
+const RETRY_BASE_MS = 2_000;
+const RETRY_MAX_MS = 30_000;
+const PROBE_RECEIVE_TIMEOUT = 5;
+
+const FATAL_ERROR_CODES: ReadonlySet<GreenApiErrorCode> = new Set(['unauthorized', 'forbidden']);
+
+function describeFailure(error: unknown): Required<Pick<PollingState, 'error' | 'stopped'>> {
+  const message =
+    error instanceof Error && error.message ? error.message : 'Не удалось получить уведомления';
+  const stopped = error instanceof GreenApiError && FATAL_ERROR_CODES.has(error.code);
+  return { error: message, stopped };
+}
+
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
-    setTimeout(resolve, ms);
+    if (signal.aborted) {
+      resolve();
+      return;
+    }
+    const onAbort = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    signal.addEventListener('abort', onAbort, { once: true });
   });
 }
 
-/**
- * Циклический опрос очереди уведомлений GREEN-API по технологии HTTP API:
- * ReceiveNotification → обработка → DeleteNotification.
- *
- * Цикл живёт, пока компонент смонтирован и enabled = true, и останавливается
- * через AbortController (в том числе прерывая текущий long polling запрос).
- */
 export function useNotificationPolling({
   credentials,
   enabled,
@@ -34,11 +66,12 @@ export function useNotificationPolling({
   onStatusChange,
   restartToken = 0,
 }: UseNotificationPollingOptions): void {
-  const onNotificationRef = useRef(onNotification);
-  const onStatusChangeRef = useRef(onStatusChange);
-
-  onNotificationRef.current = onNotification;
-  onStatusChangeRef.current = onStatusChange;
+  const emitNotification = useEffectEvent((body: NotificationBody) => {
+    onNotification(body);
+  });
+  const emitStatus = useEffectEvent((state: PollingState) => {
+    onStatusChange(state);
+  });
 
   const apiUrl = credentials?.apiUrl ?? '';
   const idInstance = credentials?.idInstance ?? '';
@@ -49,39 +82,52 @@ export function useNotificationPolling({
 
     const activeCredentials: Credentials = { apiUrl, idInstance, apiTokenInstance };
     const controller = new AbortController();
-    let cancelled = false;
-    let announced = false;
+    const { signal } = controller;
 
-    onStatusChangeRef.current('connecting');
+    const handle = async (envelope: NotificationEnvelope): Promise<void> => {
+      try {
+        emitNotification(envelope.body);
+      } catch (error) {
+        console.error('Не удалось обработать уведомление GREEN-API', envelope, error);
+      }
+      try {
+        await deleteNotification(activeCredentials, envelope.receiptId);
+      } catch {
+        // ignore delete notification error
+      }
+    };
 
     const loop = async (): Promise<void> => {
-      while (!cancelled) {
+      let healthy = false;
+      let failures = 0;
+      emitStatus({ status: 'connecting' });
+
+      while (!signal.aborted) {
         try {
-          const timeout = announced ? receiveTimeout : 5;
-          const envelope = await receiveNotification(activeCredentials, timeout, controller.signal);
-          if (cancelled) return;
+          const timeout = healthy ? receiveTimeout : PROBE_RECEIVE_TIMEOUT;
+          const envelope = await receiveNotification(activeCredentials, timeout, signal);
+          if (signal.aborted) return;
 
-          if (!announced) {
-            announced = true;
-            onStatusChangeRef.current('online');
+          failures = 0;
+          if (!healthy) {
+            healthy = true;
+            emitStatus({ status: 'online' });
           }
-
-          if (envelope) {
-            onNotificationRef.current(envelope.body);
-            try {
-              await deleteNotification(activeCredentials, envelope.receiptId);
-            } catch {
-              // уведомление будет получено повторно — дубли отсекаются по idMessage
-            }
-          }
-
-          await delay(300);
+          if (envelope) await handle(envelope);
+          await sleep(POLL_GAP_MS, signal);
         } catch (error) {
-          if (cancelled || controller.signal.aborted) return;
-          const message =
-            error instanceof Error ? error.message : 'Не удалось получить уведомления';
-          onStatusChangeRef.current('error', message);
-          await delay(5000);
+          if (signal.aborted) return;
+
+          healthy = false;
+          const failure = describeFailure(error);
+          emitStatus({ status: 'error', ...failure });
+          if (failure.stopped) return;
+
+          await sleep(
+            backoffDelay(failures, { baseMs: RETRY_BASE_MS, maxMs: RETRY_MAX_MS }),
+            signal,
+          );
+          failures += 1;
         }
       }
     };
@@ -89,7 +135,6 @@ export function useNotificationPolling({
     void loop();
 
     return () => {
-      cancelled = true;
       controller.abort();
     };
   }, [enabled, apiUrl, idInstance, apiTokenInstance, receiveTimeout, restartToken]);

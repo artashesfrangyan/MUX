@@ -1,61 +1,71 @@
-import type { Chat, Credentials } from '@shared/types';
+export const STORAGE_PREFIX = 'greenapi-max:';
 
-/**
- * Сохранение учётных данных и истории чатов в localStorage.
- *
- * ВАЖНО: apiTokenInstance хранится в браузере в открытом виде (это учебный проект).
- * Галочка «Запомнить» на экране входа позволяет не сохранять токен.
- */
-
-const CREDENTIALS_KEY = 'greenapi-max:credentials';
-const CHATS_KEY_PREFIX = 'greenapi-max:chats:';
-
-export interface PersistedChats {
-  chats: Record<string, Chat>;
-  activeChatId: string | null;
-}
-
-function safeParse<T>(raw: string | null): T | null {
-  if (!raw) return null;
+function getStorage(): Storage | null {
   try {
-    return JSON.parse(raw) as T;
+    return window.localStorage;
   } catch {
     return null;
   }
 }
 
-export function loadCredentials(): Credentials | null {
-  const data = safeParse<Credentials>(localStorage.getItem(CREDENTIALS_KEY));
-  if (!data || !data.idInstance || !data.apiTokenInstance) return null;
-  return {
-    apiUrl: data.apiUrl ?? '',
-    idInstance: String(data.idInstance),
-    apiTokenInstance: String(data.apiTokenInstance),
-  };
-}
-
-export function saveCredentials(credentials: Credentials | null): void {
-  if (!credentials) {
-    localStorage.removeItem(CREDENTIALS_KEY);
-    return;
-  }
-  localStorage.setItem(CREDENTIALS_KEY, JSON.stringify(credentials));
-}
-
-export function loadChats(idInstance: string): PersistedChats | null {
-  const data = safeParse<PersistedChats>(localStorage.getItem(CHATS_KEY_PREFIX + idInstance));
-  if (!data || typeof data.chats !== 'object' || data.chats === null) return null;
-  return data;
-}
-
-export function saveChats(idInstance: string, state: PersistedChats): void {
+export function readItem(key: string): string | null {
   try {
-    localStorage.setItem(CHATS_KEY_PREFIX + idInstance, JSON.stringify(state));
+    return getStorage()?.getItem(key) ?? null;
   } catch {
-    // переполнение localStorage не должно ломать чат
+    return null;
   }
 }
 
-export function clearChats(idInstance: string): void {
-  localStorage.removeItem(CHATS_KEY_PREFIX + idInstance);
+export function writeItem(key: string, value: string): boolean {
+  const storage = getStorage();
+  if (!storage) return false;
+  try {
+    storage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function removeItem(key: string): void {
+  try {
+    getStorage()?.removeItem(key);
+  } catch {
+    // ignore storage access error
+  }
+}
+
+export function readJson(key: string): unknown {
+  const raw = readItem(key);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+export function writeJson(key: string, value: unknown): boolean {
+  let raw: string;
+  try {
+    raw = JSON.stringify(value);
+  } catch {
+    return false;
+  }
+  return writeItem(key, raw);
+}
+
+export function removeItemsByPrefix(prefix = STORAGE_PREFIX): void {
+  const storage = getStorage();
+  if (!storage) return;
+  try {
+    const keys: string[] = [];
+    for (let index = 0; index < storage.length; index += 1) {
+      const key = storage.key(index);
+      if (key?.startsWith(prefix)) keys.push(key);
+    }
+    keys.forEach((key) => storage.removeItem(key));
+  } catch {
+    // ignore storage access error
+  }
 }

@@ -1,83 +1,105 @@
 import type { Dispatch } from 'react';
-import type { MessageStatus, NotificationBody } from '@shared/types';
-import { parseNotification, phoneChatTitle } from '@shared/lib';
-import type { ChatStoreAction } from './store';
-import { chatTitleFromChatId } from './store';
+import type { NotificationBody } from '@shared/api';
+import { parseNotification, type NotificationEvent } from '@shared/lib';
+import type { ChatMessage, MessageStatus } from '@entities/message';
+import { resolveChatTitle } from '../lib/title';
+import type { ChatStoreAction, ChatStoreState } from './store';
 
-const STATUS_MAP: Record<string, MessageStatus> = {
-  sent: 'sent',
-  delivered: 'delivered',
-  read: 'read',
-  failed: 'failed',
-  noAccount: 'failed',
-  notInGroup: 'failed',
-};
+const STATUS_MAP: ReadonlyMap<string, MessageStatus> = new Map([
+  ['delivered', 'delivered'],
+  ['read', 'read'],
+  ['failed', 'failed'],
+  ['noAccount', 'failed'],
+  ['notInGroup', 'failed'],
+]);
+
+const FAILURE_TEXT: ReadonlyMap<string, string> = new Map([
+  ['failed', 'MAX вернул ошибку при отправке'],
+  ['noAccount', 'У получателя нет аккаунта MAX'],
+  ['notInGroup', 'Вы не участник этой группы'],
+]);
+
+function failureText(status: string, description?: string): string {
+  const text = FAILURE_TEXT.get(status) ?? 'Сообщение не отправлено';
+  return description ? `${text} (${description})` : text;
+}
+
+export interface NotificationContext {
+  state: ChatStoreState;
+  dispatch: Dispatch<ChatStoreAction>;
+  pageHidden?: boolean;
+  onQuota: (description?: string) => void;
+  onState: (state: string) => void;
+}
+
+type TextEvent = Extract<NotificationEvent, { kind: 'incomingText' | 'outgoingText' }>;
+
+function toChatMessage(event: TextEvent): ChatMessage {
+  return {
+    id: event.idMessage,
+    chatId: event.chatId,
+    text: event.text,
+    timestamp: event.timestamp,
+    outgoing: event.kind === 'outgoingText',
+    status: 'sent',
+    ...(event.quotedId ? { replyTo: { idMessage: event.quotedId } } : {}),
+  };
+}
+
+function applyTextMessage(event: TextEvent, context: NotificationContext): void {
+  const { chatId, isGroup } = event;
+
+  const phoneNumber = isGroup ? undefined : event.phoneNumber;
+
+  context.dispatch({
+    type: 'ensureChat',
+    chatId,
+    title: resolveChatTitle(chatId, event.title, phoneNumber),
+    phoneNumber,
+    isGroup,
+    timestamp: event.timestamp,
+  });
+
+  context.dispatch({
+    type: 'addMessage',
+    message: toChatMessage(event),
+    echo: event.kind === 'outgoingText' && event.viaApi,
+    pageHidden: context.pageHidden,
+  });
+}
 
 export function handleNotificationEvent(
   body: NotificationBody | undefined,
-  dispatch: Dispatch<ChatStoreAction>,
-  activeChatId: string | null,
-  onQuota: (description?: string) => void,
-  onState: (state: string) => void,
+  context: NotificationContext,
 ): void {
   const event = parseNotification(body);
 
   switch (event.kind) {
     case 'incomingText':
-    case 'outgoingText': {
-      const title =
-        event.title ||
-        phoneChatTitle(event.chatId, event.phoneNumber) ||
-        chatTitleFromChatId(event.chatId);
-
-      dispatch({
-        type: 'ensureChat',
-        chatId: event.chatId,
-        title,
-        phoneNumber: event.phoneNumber,
-        isGroup: event.isGroup,
-      });
-
-      dispatch({
-        type: 'addMessage',
-        message: {
-          id: event.idMessage,
-          chatId: event.chatId,
-          text: event.text,
-          timestamp: event.timestamp,
-          outgoing: event.kind === 'outgoingText',
-          status: 'sent',
-        },
-        incrementUnread: event.kind === 'incomingText' && activeChatId !== event.chatId,
-      });
+    case 'outgoingText':
+      applyTextMessage(event, context);
       break;
-    }
 
     case 'status': {
-      if (!event.chatId) break;
-      dispatch({
-        type: 'updateMessage',
+      const status = STATUS_MAP.get(event.status);
+      if (!event.chatId || !status) break;
+
+      context.dispatch({
+        type: 'updateStatus',
         chatId: event.chatId,
-        messageId: event.idMessage,
-        patch: {
-          status: STATUS_MAP[event.status] ?? 'sent',
-          error:
-            event.status === 'failed'
-              ? 'Мессенджер MAX вернул ошибку при отправке'
-              : event.status === 'noAccount'
-                ? 'На номере получателя нет аккаунта MAX'
-                : undefined,
-        },
+        idMessage: event.idMessage,
+        status,
+        ...(status === 'failed' ? { error: failureText(event.status, event.description) } : {}),
       });
       break;
     }
 
     case 'state':
-      onState(event.state);
+      context.onState(event.state);
       break;
 
     case 'quota':
-      onQuota(event.description);
+      context.onQuota(event.description);
       break;
 
     default:

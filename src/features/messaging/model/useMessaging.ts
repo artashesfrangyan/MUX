@@ -1,54 +1,97 @@
-import { useCallback } from 'react';
-import type { Dispatch } from 'react';
-import { sendMessage } from '@shared/api';
-import type { Credentials, ChatMessage } from '@shared/types';
+import { useCallback, useEffect, useRef, type Dispatch } from 'react';
+import { GreenApiError, sendMessage, type Credentials } from '@shared/api';
 import type { ChatStoreAction } from '@entities/chat';
+import { createLocalMessageId, isLocalMessageId, type ChatMessage } from '@entities/message';
+
+export interface Messaging {
+  handleSend: (chatId: string, text: string) => void;
+  handleRetry: (message: ChatMessage) => void;
+}
+
+export const ECHO_GRACE_MS = 15_000;
+
+function errorText(error: unknown): string {
+  return error instanceof Error && error.message ? error.message : 'Не удалось отправить сообщение';
+}
+
+function isUncertainFailure(error: unknown): boolean {
+  return error instanceof GreenApiError && error.code === 'timeout';
+}
 
 export function useMessaging(
   credentials: Credentials | null,
   dispatch: Dispatch<ChatStoreAction>,
-  onError: (text: string) => void,
-) {
-  const sendText = useCallback(
-    async (chatId: string, text: string, existingId?: string) => {
-      if (!credentials) return;
-      const messageId =
-        existingId ?? `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+): Messaging {
+  const inFlightRef = useRef(new Set<string>());
+  const timersRef = useRef(new Set<ReturnType<typeof setTimeout>>());
 
-      if (existingId) {
-        dispatch({ type: 'updateMessage', chatId, messageId, patch: { status: 'pending', error: undefined } });
-      } else {
-        dispatch({
-          type: 'addMessage',
-          message: { id: messageId, chatId, text, timestamp: Date.now(), outgoing: true, status: 'pending' },
-          incrementUnread: false,
-        });
-      }
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => {
+      timers.forEach(clearTimeout);
+      timers.clear();
+    };
+  }, []);
+
+  const deliver = useCallback(
+    async (chatId: string, text: string, localId: string) => {
+      const inFlight = inFlightRef.current;
+      if (!credentials || inFlight.has(localId)) return;
+      inFlight.add(localId);
 
       try {
         const { idMessage } = await sendMessage(credentials, chatId, text);
-        dispatch({ type: 'updateMessage', chatId, messageId, patch: { id: idMessage, status: 'sent' } });
+        dispatch({ type: 'resolveOutgoing', chatId, localId, idMessage });
       } catch (error) {
-        const reason = error instanceof Error ? error.message : 'Не удалось отправить сообщение';
-        dispatch({ type: 'updateMessage', chatId, messageId, patch: { status: 'failed', error: reason } });
-        onError(`Сообщение не отправлено: ${reason}`);
+        const reason = errorText(error);
+        const fail = () => dispatch({ type: 'failOutgoing', chatId, localId, error: reason });
+
+        if (isUncertainFailure(error)) {
+          const timer = setTimeout(() => {
+            timersRef.current.delete(timer);
+            fail();
+          }, ECHO_GRACE_MS);
+          timersRef.current.add(timer);
+        } else {
+          fail();
+        }
+      } finally {
+        inFlight.delete(localId);
       }
     },
-    [credentials, dispatch, onError],
+    [credentials, dispatch],
   );
 
   const handleSend = useCallback(
-    (chatId: string | null, text: string) => {
-      if (chatId) void sendText(chatId, text);
+    (chatId: string, text: string) => {
+      if (!credentials) return;
+      const localId = createLocalMessageId();
+      dispatch({
+        type: 'addMessage',
+        message: {
+          id: localId,
+          chatId,
+          text,
+          timestamp: Date.now(),
+          outgoing: true,
+          status: 'pending',
+        },
+      });
+      void deliver(chatId, text, localId);
     },
-    [sendText],
+    [credentials, deliver, dispatch],
   );
 
   const handleRetry = useCallback(
     (message: ChatMessage) => {
-      void sendText(message.chatId, message.text, message.id);
+      if (message.status !== 'failed') return;
+
+      const localId = isLocalMessageId(message.id) ? message.id : createLocalMessageId();
+      if (inFlightRef.current.has(localId)) return;
+      dispatch({ type: 'retryOutgoing', chatId: message.chatId, messageId: message.id, localId });
+      void deliver(message.chatId, message.text, localId);
     },
-    [sendText],
+    [deliver, dispatch],
   );
 
   return { handleSend, handleRetry };

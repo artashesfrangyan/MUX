@@ -1,22 +1,24 @@
-/* ==========================================================================
-   Экран входа в стиле MAX: карточка на градиенте с паттерном
-   ========================================================================== */
-
-.login {
+.screen {
   position: relative;
   flex: 1;
+  min-height: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  overflow: hidden;
+}
+
+.scroller {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  padding: 24px 16px;
+  overflow-y: auto;
 }
 
 .card {
-  position: relative;
-  z-index: 1;
   width: 100%;
   max-width: 440px;
+  margin: auto;
   padding: 32px;
   border-radius: var(--radius-modal);
   background: var(--background-primary);
@@ -36,7 +38,7 @@
 .subtitle {
   margin-bottom: 24px;
   font: 400 var(--font-body-size) / var(--font-body-line-height) var(--font);
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
 }
 
 .advancedToggle {
@@ -49,35 +51,76 @@
   font: 500 var(--font-description-size) / var(--font-description-line-height) var(--font);
 }
 
+.option {
+  margin-bottom: 12px;
+}
+
 .checkbox {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   margin-bottom: 12px;
   font: 400 var(--font-description-size) / var(--font-description-line-height) var(--font);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   cursor: pointer;
 }
 
+.option .checkbox {
+  margin-bottom: 4px;
+}
+
 .checkbox input {
-  margin: 1px 0 0;
-  width: 20px;
-  height: 20px;
+  margin: 0;
+  width: 18px;
+  height: 18px;
   accent-color: var(--controls-active);
   flex-shrink: 0;
 }
 
-.error {
-  margin-bottom: 16px;
-  padding: 12px 14px;
-  border-radius: var(--radius-button-large);
-  background: var(--background-themed-fade);
-  color: var(--text-negative);
+.optionHint {
+  margin-left: 28px;
   font: 400 var(--font-description-size) / var(--font-description-line-height) var(--font);
+  color: var(--text-secondary);
 }
 
-.footer {
-  margin-top: 18px;
-  font: 400 var(--font-tag-size) / var(--font-tag-line-height) var(--font);
-  color: var(--text-tertiary);
+.alert {
+  margin-bottom: 16px;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 16px;
+  font: 400 var(--font-description-size) / var(--font-description-line-height) var(--font);
+  color: var(--text-secondary);
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--divider-primary);
+}
+
+.card .demoButton {
+  height: auto;
+  min-height: 52px;
+  padding-block: 12px;
+  white-space: normal;
+  text-align: center;
+}
+
+.demoHint {
+  margin-top: 8px;
+  text-align: center;
+  font: 400 var(--font-description-size) / var(--font-description-line-height) var(--font);
+  color: var(--text-secondary);
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 24px 20px;
+  }
 }
