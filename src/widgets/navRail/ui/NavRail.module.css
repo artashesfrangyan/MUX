@@ -1,28 +1,29 @@
-/* ==========================================================================
-   Левая рельса навигации MAX: 77px, иконка 24px + подпись 11px
-   ========================================================================== */
+.nav {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  background: var(--background-primary);
+}
 
 .rail {
-  position: relative;
   width: 77px;
   flex-shrink: 0;
-  display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
   padding: 16px 0 12px;
-  background: var(--background-primary);
-  z-index: 3;
-  border-right: 1px solid rgba(12, 13, 14, 0.06);
+  border-right: 1px solid var(--divider-secondary);
 }
 
-.topGroup,
-.bottomGroup {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
+.tabbar {
+  flex-shrink: 0;
+  align-items: stretch;
+  padding: 4px 8px max(4px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--divider-secondary);
+}
+
+.tabbar > * {
+  flex: 1;
 }
 
 .item {
@@ -37,21 +38,22 @@
   gap: 2px;
   text-align: center;
   font: 400 var(--font-tag-size) / var(--font-tag-line-height) var(--font);
-  color: color-mix(in srgb, var(--text-primary) 72%, transparent);
+  color: var(--text-secondary);
   transition: color 0.15s ease;
 }
 
-.item:not(:disabled):hover {
+.tabbar .item {
+  width: 100%;
+  padding: 6px 2px;
+}
+
+.item:hover,
+.itemActive {
   color: var(--text-primary);
 }
 
-.itemActive,
-.itemActive:hover {
-  color: var(--text-primary);
-}
-
-.itemDisabled {
-  cursor: default;
+.tabbar .itemActive {
+  color: var(--text-themed);
 }
 
 .itemLabel {
@@ -62,36 +64,15 @@
   word-break: break-word;
 }
 
-.iconWrap {
+.settings {
   position: relative;
-  display: inline-flex;
+  display: flex;
+  justify-content: center;
 }
 
-.counter {
+.popover {
   position: absolute;
-  top: -6px;
-  left: 12px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 9px;
-  background: var(--button-primary);
-  color: var(--button-primary-contrast);
-  font: 500 var(--font-tag-size) / 18px var(--font);
-}
-
-.separator {
-  width: 60px;
-  height: 1px;
-  margin: 4px 0;
-  background: var(--divider-primary);
-}
-
-/* Поп-ап настроек инстанса */
-.menu {
-  position: absolute;
-  left: calc(100% + 8px);
-  bottom: 12px;
+  z-index: 10;
   width: 292px;
   padding: 8px;
   border-radius: var(--radius-button-large);
@@ -100,19 +81,34 @@
   text-align: left;
 }
 
-.menuHeader {
+.popover[hidden] {
+  display: none;
+}
+
+.popoverRight {
+  left: calc(100% + 8px);
+  bottom: 0;
+}
+
+.popoverTop {
+  right: 0;
+  bottom: calc(100% + 8px);
+  width: min(320px, calc(100vw - 16px));
+}
+
+.popoverHeader {
   padding: 8px 12px 12px;
   border-bottom: 1px solid var(--divider-secondary);
   margin-bottom: 4px;
 }
 
-.menuTitle {
+.popoverTitle {
   font: 500 var(--font-body-size) / var(--font-body-line-height) var(--font);
   color: var(--text-primary);
-  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
-.menuSubtitle {
+.popoverSubtitle {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -121,7 +117,17 @@
   color: var(--text-tertiary);
 }
 
+.demoNote {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: var(--radius-button-small);
+  background: var(--background-warning-fade);
+  color: var(--text-warning-strong);
+  font: 400 var(--font-description-size) / var(--font-description-line-height) var(--font);
+}
+
 .statusDot {
+  flex-shrink: 0;
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -133,19 +139,18 @@
 }
 
 .statusConnecting {
-  background: #fc0;
+  background: var(--icon-warning);
 }
 
 .statusError {
   background: var(--text-negative);
 }
 
-.menuItem {
+.popoverItem {
   display: flex;
   align-items: center;
-  gap: 10px;
   width: 100%;
-  height: 40px;
+  min-height: 40px;
   padding: 0 12px;
   border: none;
   border-radius: var(--radius-button-small);
@@ -155,20 +160,10 @@
   text-align: left;
 }
 
-.menuItem:not(:disabled):hover {
+.popoverItem:hover {
   background: var(--states-button-ghost-hover);
 }
 
-.menuItemDanger {
-  color: var(--text-negative);
-}
-
-@media (max-width: 640px) {
-  .rail {
-    width: 60px;
-  }
-
-  .item {
-    width: 56px;
-  }
+.popoverItemDanger {
+  color: var(--text-negative-strong);
 }

@@ -1,2 +1,1 @@
-export * from './ui/Sidebar';
-export * from './ui/ChatList';
+export { Sidebar } from './ui/Sidebar';

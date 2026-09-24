@@ -1,1 +1,1 @@
-export { NavRail, type NavFolder } from './ui/NavRail';
+export { NavRail } from './ui/NavRail';

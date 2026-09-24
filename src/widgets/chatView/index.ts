@@ -1,2 +1,2 @@
-export * from './ui/ChatView';
-export * from './ui/EmptyState';
+export { ChatView } from './ui/ChatView';
+export { EmptyState } from './ui/EmptyState';

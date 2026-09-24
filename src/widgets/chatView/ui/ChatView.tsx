@@ -1,49 +1,105 @@
-import type { Chat, ChatMessage, ConnectionStatus } from '@shared/types';
-import { phoneChatTitle } from '@shared/lib';
+import { useEffect, useRef, type ReactNode } from 'react';
+import type { ConnectionStatus } from '@shared/api';
+import { matchesMedia, phoneChatTitle, TOUCH_INPUT_QUERY } from '@shared/lib';
 import { Avatar, Wallpaper } from '@shared/ui';
-import { Composer, MessageList } from '@features/messaging';
+import type { Chat } from '@entities/chat';
+import type { ChatMessage } from '@entities/message';
+import { Composer, MessageList, type ComposerHandle } from '@features/messaging';
 import s from './ChatView.module.css';
 
 interface ChatViewProps {
   chat: Chat;
   connection: ConnectionStatus;
-  onSend: (text: string) => void;
+  draft: string;
+  onDraftChange: (chatId: string, text: string) => void;
+  onSend: (chatId: string, text: string) => void;
   onRetry: (message: ChatMessage) => void;
+  onBack?: () => void;
+  overlay?: ReactNode;
 }
 
-/** Состояние приёма сообщений — вторая строка шапки чата */
-const RECEIVE_STATE: Record<ConnectionStatus, string> = {
-  offline: 'нет соединения с GREEN-API',
-  connecting: 'подключение к GREEN-API…',
-  online: 'приём сообщений активен',
-  error: 'ошибка получения сообщений',
+const CONNECTION_NOTE: Partial<Record<ConnectionStatus, string>> = {
+  connecting: 'соединение…',
+  error: 'нет связи с GREEN-API',
+  offline: 'нет связи с GREEN-API',
 };
 
 function chatSubtitle(chat: Chat, connection: ConnectionStatus): string {
   const parts: string[] = [];
-  if (chat.phoneNumber) parts.push(phoneChatTitle(chat.chatId, chat.phoneNumber));
+  const phone = phoneChatTitle(chat.phoneNumber);
+  if (phone && phone !== chat.title) parts.push(phone);
   if (chat.isGroup) parts.push('групповой чат');
-  parts.push(RECEIVE_STATE[connection]);
+  const note = CONNECTION_NOTE[connection];
+  if (note) parts.push(note);
   return parts.join(' · ');
 }
 
-/** Правая колонка MAX: шапка чата, лента сообщений на обоях и поле ввода */
-export function ChatView({ chat, connection, onSend, onRetry }: ChatViewProps) {
+function BackIcon() {
   return (
-    <section className={s.chatView}>
+    <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="m15 5-7 7 7 7"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function ChatView({
+  chat,
+  connection,
+  draft,
+  onDraftChange,
+  onSend,
+  onRetry,
+  onBack,
+  overlay,
+}: ChatViewProps) {
+  const composerRef = useRef<ComposerHandle>(null);
+  const subtitle = chatSubtitle(chat, connection);
+  const { chatId } = chat;
+
+  useEffect(() => {
+    if (!matchesMedia(TOUCH_INPUT_QUERY)) composerRef.current?.focus();
+  }, [chatId]);
+
+  return (
+    <section className={s.chatView} aria-label={`Чат: ${chat.title}`}>
       <header className={s.header}>
-        <Avatar id={chat.chatId} title={chat.title} size={40} />
+        {onBack ? (
+          <button type="button" className={s.back} aria-label="Назад к чатам" onClick={onBack}>
+            <BackIcon />
+          </button>
+        ) : null}
+        <Avatar id={chatId} title={chat.title} size={40} />
         <div className={s.info}>
-          <span className={s.title}>{chat.title}</span>
-          <span className={s.subtitle}>{chatSubtitle(chat, connection)}</span>
+          <h2 className={s.title}>{chat.title}</h2>
+          {subtitle ? <p className={s.subtitle}>{subtitle}</p> : null}
         </div>
       </header>
 
       <div className={s.body}>
         <Wallpaper />
-        <MessageList messages={chat.messages} onRetry={onRetry} />
+        {overlay ? <div className={s.overlay}>{overlay}</div> : null}
+        {}
+        <MessageList
+          key={chatId}
+          messages={chat.messages}
+          peerName={chat.title}
+          onRetry={onRetry}
+        />
         <div className={s.composerArea}>
-          <Composer onSend={onSend} disabled={connection === 'offline'} />
+          <Composer
+            ref={composerRef}
+            value={draft}
+            onChange={(text) => onDraftChange(chatId, text)}
+            onSend={(text) => onSend(chatId, text)}
+            disabled={connection === 'offline'}
+          />
         </div>
       </div>
     </section>
