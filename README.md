@@ -1,17 +1,5 @@
 <img width="1512" height="856" alt="image" src="https://github.com/user-attachments/assets/97649f9f-cde9-4e33-9ba8-3f9072ffea9d" />
 
-# Структура:
-`
-src/
-├── app/              # Точка входа, стили приложения и Error Boundary
-├── entities/         # Доменные сущности чатов и сообщений
-├── features/         # Авторизация, создание чата, сообщения, синхронизация
-├── pages/            # Страницы приложения
-├── shared/           # API, hooks, UI-компоненты и утилиты
-├── widgets/          # Составные виджеты интерфейса
-└── styles/           # Общие стили
-`
-
 Коммиты написаны по методологии [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/)
 Используется Feature-Sliced Design.
 
