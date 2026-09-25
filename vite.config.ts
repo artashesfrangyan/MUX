@@ -14,7 +14,7 @@ const fsdAliases = {
 };
 
 export default defineConfig({
-  base: './',
+  base: '/MUX/',
   plugins: [react()],
   resolve: {
     alias: fsdAliases,
