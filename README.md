@@ -1,5 +1,7 @@
-# Структура:
+<img width="1512" height="856" alt="image" src="https://github.com/user-attachments/assets/97649f9f-cde9-4e33-9ba8-3f9072ffea9d" />
 
+# Структура:
+`
 src/
 ├── app/              # Точка входа, стили приложения и Error Boundary
 ├── entities/         # Доменные сущности чатов и сообщений
@@ -8,7 +10,9 @@ src/
 ├── shared/           # API, hooks, UI-компоненты и утилиты
 ├── widgets/          # Составные виджеты интерфейса
 └── styles/           # Общие стили
+`
 
+Коммиты написаны по методологии [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/)
 Используется Feature-Sliced Design.
 
 # Основные сценарии:
@@ -52,9 +56,13 @@ http://localhost:5173
 # Инструкция по тестированию:
 
 1) Открыть приложение.
+<img width="1512" height="858" alt="image" src="https://github.com/user-attachments/assets/8b8efb2f-d39a-4a74-920d-e6a4a648be83" />
+
 2) Перейти в demo-режим или зайти в свой аккаунт по данным инстанса.
+<img width="1512" height="859" alt="image" src="https://github.com/user-attachments/assets/225dc837-4ffa-4a01-8592-65b428c4608e" />
+
 3) Создать чат с номером получателя.
+<img width="1511" height="857" alt="image" src="https://github.com/user-attachments/assets/bc633d4b-032f-46f5-b54b-1bacf69cbc25" />
+
 4) Отправить текстовое сообщение.
-5) Дождаться эмулированного ответа.
-6) Показать статусы сообщений и обновление истории.
-7) Переключиться между чатами.
+5) Убедиться, что получатель получил сообщение (если это не demo-режим) или что он ответил (если это demo-режим)
